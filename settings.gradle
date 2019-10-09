@@ -1,0 +1,2 @@
+include ':library', ':annotations', ':annotationprocessors', ':sample'
+rootProject.name='ReactiveComponents'
