@@ -19,12 +19,9 @@ dependencies {
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    // Code library
-    implementation project(':library')
-
     // Available Annotations
-    compileOnly project(':annotations')
-    kapt project(':annotations')
+    implementation project(':library')
+    kapt project(':library')
 
     // Auto register annotation
     implementation 'com.google.auto.service:auto-service:1.0-rc6'

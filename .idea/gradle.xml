@@ -9,7 +9,6 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/annotationprocessors" />
-            <option value="$PROJECT_DIR$/annotations" />
             <option value="$PROJECT_DIR$/library" />
             <option value="$PROJECT_DIR$/sample" />
           </set>

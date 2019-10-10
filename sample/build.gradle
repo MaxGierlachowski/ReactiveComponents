@@ -47,6 +47,5 @@ dependencies {
 
     // Library
     implementation project(':library')
-    implementation project(':annotations')
     kapt project(':annotationprocessors')
 }

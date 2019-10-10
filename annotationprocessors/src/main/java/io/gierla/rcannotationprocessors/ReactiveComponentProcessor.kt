@@ -3,10 +3,10 @@ package io.gierla.rcannotationprocessors
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import io.gierla.rcannotations.Action
-import io.gierla.rcannotations.ReactiveComponent
-import io.gierla.rcannotations.State
-import io.gierla.rcannotations.Structure
+import io.gierla.rccore.annotations.Action
+import io.gierla.rccore.annotations.ReactiveComponent
+import io.gierla.rccore.annotations.State
+import io.gierla.rccore.annotations.Structure
 import io.gierla.rccore.state.StateDispatcher
 import io.gierla.rccore.state.StateDrawer
 import io.gierla.rccore.state.StateSubscriber
@@ -32,7 +32,6 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
         private const val STATE_DRAWER_NAME = "ViewStateDrawer"
         private const val STATE_DISPATCHER_NAME = "ViewStateDispatcher"
-        private const val VIEW_NAME = "ViewImpl"
     }
 
     private var messager: Messager? = null
@@ -122,7 +121,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                     stateElement?.let { mStateElement ->
                         actionElement?.let { mActionElement ->
                             createStateClasses(packageName, mStateElement, mStructureElement)
-                            createViewClasses(packageName, viewTypeClass.toString(), stateElement, structureElement, mActionElement)
+                            createViewClasses(packageName, element.simpleName.toString(), viewTypeClass.toString(), stateElement, structureElement, mActionElement)
                         }
                     }
                 }
@@ -147,7 +146,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     }
 
-    private fun createViewClasses(packageName: String, parentViewType: String, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement) {
+    private fun createViewClasses(packageName: String, viewName: String, parentViewType: String, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement) {
 
         val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
@@ -163,7 +162,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val ContextType = ClassName("android.content", "Context")
         val AttributeSetType = ClassName("android.util", "AttributeSet")
 
-        val viewTypeSpecBuilder = TypeSpec.classBuilder(VIEW_NAME)
+        val viewTypeSpecBuilder = TypeSpec.classBuilder(viewName + "Impl")
             .addModifiers(KModifier.ABSTRACT)
 
         viewTypeSpecBuilder.primaryConstructor(
@@ -300,7 +299,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 .build()
         )
 
-        val viewFile = FileSpec.builder(packageName, VIEW_NAME).addType(viewTypeSpecBuilder.build()).build()
+        val viewFile = FileSpec.builder(packageName, viewName + "Impl").addType(viewTypeSpecBuilder.build()).build()
 
         filer?.let { viewFile.writeTo(it) }
 

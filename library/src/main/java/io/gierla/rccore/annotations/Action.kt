@@ -1,6 +1,6 @@
-package io.gierla.rcannotations
+package io.gierla.rccore.annotations
 
 @MustBeDocumented
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class State
+annotation class Action

@@ -1,4 +1,4 @@
-package io.gierla.rcannotations
+package io.gierla.rccore.annotations
 
 import kotlin.reflect.KClass
 
