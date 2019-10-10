@@ -293,7 +293,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             FunSpec
                 .builder("setVariation")
                 .addParameter("variation", Variation::class.asTypeName().parameterizedBy(ViewStructureType, ViewStateDrawerType))
-                .addParameter("callback", VariationCallbackType)
+                .addParameter("callback", VariationCallbackType.copy(nullable = true))
                 .addStatement("variation.init(getViewStructure())")
                 .addStatement("dispatcher = %T(variation.getStateDrawer(), callback)", ViewStateDisptacherType)
                 .build()
