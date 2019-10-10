@@ -42,6 +42,9 @@ dependencies {
     // Flat layout widget
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 
+    // ReactiveX
+    implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'
+
     // Library
     implementation project(':library')
     implementation project(':annotations')

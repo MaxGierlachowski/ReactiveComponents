@@ -1,4 +1,4 @@
-package io.gierla.reactivecomponents.view
+package io.gierla.rccore.view
 
 // Empty marker interface
 interface Structure

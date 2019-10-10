@@ -1,2 +1,2 @@
-include ':library', ':annotations', ':annotationprocessors', ':sample'
+include ':sample', ':library', ':annotations', ':annotationprocessors'
 rootProject.name='ReactiveComponents'

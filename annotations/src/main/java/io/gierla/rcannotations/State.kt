@@ -1,4 +1,4 @@
-package io.gierla.reactivecomponents
+package io.gierla.rcannotations
 
 @MustBeDocumented
 @Target(AnnotationTarget.CLASS)

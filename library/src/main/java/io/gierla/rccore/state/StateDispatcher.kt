@@ -1,6 +1,6 @@
-package io.gierla.reactivecomponents.state
+package io.gierla.rccore.state
 
-import io.gierla.reactivecomponents.view.Structure
+import io.gierla.rccore.view.Structure
 
 interface StateDispatcher<V : Structure, S : State> {
     fun dispatchUpdates(view: V, oldState: S?, newState: S)

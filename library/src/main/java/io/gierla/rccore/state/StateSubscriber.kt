@@ -1,4 +1,4 @@
-package io.gierla.reactivecomponents.state
+package io.gierla.rccore.state
 
 interface StateSubscriber<S: State> {
     fun onError(error: Throwable)

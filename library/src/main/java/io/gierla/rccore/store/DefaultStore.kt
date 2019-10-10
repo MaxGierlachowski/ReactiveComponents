@@ -1,10 +1,10 @@
-package io.gierla.reactivecomponents.store
+package io.gierla.rccore.store
 
-import io.gierla.reactivecomponents.action.Action
-import io.gierla.reactivecomponents.action.ActionSubscriber
-import io.gierla.reactivecomponents.state.State
-import io.gierla.reactivecomponents.state.StateDiffPair
-import io.gierla.reactivecomponents.state.StateSubscriber
+import io.gierla.rccore.action.Action
+import io.gierla.rccore.action.ActionSubscriber
+import io.gierla.rccore.state.State
+import io.gierla.rccore.state.StateDiffPair
+import io.gierla.rccore.state.StateSubscriber
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy

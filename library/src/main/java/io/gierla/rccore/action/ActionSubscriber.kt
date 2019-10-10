@@ -1,4 +1,4 @@
-package io.gierla.reactivecomponents.action
+package io.gierla.rccore.action
 
 interface ActionSubscriber<A: Action> {
     fun onError(error: Throwable)

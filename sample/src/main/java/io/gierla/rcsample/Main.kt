@@ -1,4 +1,4 @@
-package io.gierla.reactivecomponentstest
+package io.gierla.rcsample
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle

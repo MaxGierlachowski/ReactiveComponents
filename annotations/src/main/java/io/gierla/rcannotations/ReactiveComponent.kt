@@ -1,4 +1,4 @@
-package io.gierla.reactivecomponents
+package io.gierla.rcannotations
 
 import kotlin.reflect.KClass
 

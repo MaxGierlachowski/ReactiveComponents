@@ -1,6 +1,6 @@
-package io.gierla.reactivecomponents.view
+package io.gierla.rccore.view
 
-import io.gierla.reactivecomponents.state.StateDrawer
+import io.gierla.rccore.state.StateDrawer
 
 interface Variation<V: Structure, D: StateDrawer> {
     fun init(view: V)
