@@ -50,6 +50,8 @@ class DefaultStore<S : State, A : Action>(
 
     override fun subscribeState(subscriber: StateSubscriber<S>): Disposable {
         // Subscribe subscriber to state and return disposable to allow unsubscribeState(disposable: Disposable) later
+        // Initialy call subscriber because we could already have a state. BehaviorSubject is going to call it the first time itself but oldState and newState would be the same and because of the diff it wouldn't be rendered
+        subscriber.onNext(initialState, state)
         val disposable = stateSubscribers.subscribeBy(
             onNext = { subscriber.onNext(it.oldState, it.newState) },
             onComplete = { subscriber.onComplete() },

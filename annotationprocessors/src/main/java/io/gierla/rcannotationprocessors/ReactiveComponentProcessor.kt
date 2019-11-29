@@ -30,8 +30,6 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
-        private const val STATE_DRAWER_NAME = "ViewStateDrawer"
-        private const val STATE_DISPATCHER_NAME = "ViewStateDispatcher"
     }
 
     private var messager: Messager? = null
@@ -74,6 +72,11 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         }
 
         viewTypeMirror?.let { typeMirror ->
+
+            val viewName = element.simpleName.toString()
+
+            val viewStateDrawerName = viewName + "StateDrawer"
+            val viewStateDispatcherName = viewName + "StateDispatcher"
 
             val viewTypeClass = typeMirror
 
@@ -120,8 +123,8 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 structureElement?.let { mStructureElement ->
                     stateElement?.let { mStateElement ->
                         actionElement?.let { mActionElement ->
-                            createStateClasses(packageName, mStateElement, mStructureElement)
-                            createViewClasses(packageName, element.simpleName.toString(), viewTypeClass.toString(), stateElement, structureElement, mActionElement)
+                            createStateClasses(packageName, mStateElement, mStructureElement, viewStateDispatcherName, viewStateDrawerName)
+                            createViewClasses(packageName, viewName, viewTypeClass.toString(), stateElement, structureElement, mActionElement, viewStateDispatcherName, viewStateDrawerName)
                         }
                     }
                 }
@@ -146,14 +149,14 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     }
 
-    private fun createViewClasses(packageName: String, viewName: String, parentViewType: String, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement) {
+    private fun createViewClasses(packageName: String, viewName: String, parentViewType: String, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
 
         val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
         val ViewActionType = ClassName(packageName, actionElement.qualifiedName.toString())
 
-        val ViewStateDrawerType = ClassName(packageName, STATE_DRAWER_NAME)
-        val ViewStateDisptacherType = ClassName(packageName, STATE_DISPATCHER_NAME)
+        val ViewStateDrawerType = ClassName(packageName, viewStateDrawerName)
+        val ViewStateDisptacherType = ClassName(packageName, viewStateDispatcherName)
 
         val ViewStoreType = DefaultStore::class.asTypeName()
         val DispatcherType = StateDispatcher::class.asTypeName()
@@ -305,12 +308,12 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     }
 
-    private fun createStateClasses(packageName: String, stateElement: TypeElement, structureElement: TypeElement) {
+    private fun createStateClasses(packageName: String, stateElement: TypeElement, structureElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
 
         val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
 
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
-        val ViewStateDrawerType = ClassName(packageName, STATE_DRAWER_NAME)
+        val ViewStateDrawerType = ClassName(packageName, viewStateDrawerName)
 
         val StateDispatcherType = StateDispatcher::class.asTypeName()
 
@@ -323,10 +326,10 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             returnType = Unit::class.asTypeName()
         )
 
-        val viewStateDrawerTypeSpecBuilder = TypeSpec.interfaceBuilder(STATE_DRAWER_NAME)
+        val viewStateDrawerTypeSpecBuilder = TypeSpec.interfaceBuilder(viewStateDrawerName)
             .addSuperinterface(StateDrawer::class.asTypeName())
 
-        val viewStateDisptacherTypeSpecBuilder = TypeSpec.classBuilder(STATE_DISPATCHER_NAME)
+        val viewStateDisptacherTypeSpecBuilder = TypeSpec.classBuilder(viewStateDispatcherName)
         viewStateDisptacherTypeSpecBuilder.primaryConstructor(
             FunSpec.constructorBuilder()
                 .addParameter("stateDrawer", ViewStateDrawerType.copy(nullable = true))
@@ -376,8 +379,8 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val viewStateDispatcherFunSpec = viewStateDispatcherFunSpecBuilder.build()
         viewStateDisptacherTypeSpecBuilder.addFunction(viewStateDispatcherFunSpec)
 
-        val viewStateDrawerFile = FileSpec.builder(packageName, STATE_DRAWER_NAME).addType(viewStateDrawerTypeSpecBuilder.build()).build()
-        val viewStateDispatcherFile = FileSpec.builder(packageName, STATE_DISPATCHER_NAME).addType(viewStateDisptacherTypeSpecBuilder.build()).build()
+        val viewStateDrawerFile = FileSpec.builder(packageName, viewStateDrawerName).addType(viewStateDrawerTypeSpecBuilder.build()).build()
+        val viewStateDispatcherFile = FileSpec.builder(packageName, viewStateDispatcherName).addType(viewStateDisptacherTypeSpecBuilder.build()).build()
 
         filer?.let { viewStateDrawerFile.writeTo(it) }
         filer?.let { viewStateDispatcherFile.writeTo(it) }
