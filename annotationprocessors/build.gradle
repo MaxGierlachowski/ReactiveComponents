@@ -2,7 +2,7 @@ apply plugin: 'kotlin'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'com.github.dcendents.android-maven'
 
-group='com.github.MaxGierlachowski.ReactiveComponents'
+group = 'com.github.MaxGierlachowski.ReactiveComponents'
 
 sourceSets {
     main {
@@ -29,6 +29,9 @@ dependencies {
 
     // Creating *.kt files
     implementation 'com.squareup:kotlinpoet:1.4.0'
+
+    // Reflection
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     // ReactiveX
     implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'

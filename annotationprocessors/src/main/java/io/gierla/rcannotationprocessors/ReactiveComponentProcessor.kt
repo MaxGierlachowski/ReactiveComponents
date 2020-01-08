@@ -3,10 +3,7 @@ package io.gierla.rcannotationprocessors
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import io.gierla.rccore.annotations.Action
-import io.gierla.rccore.annotations.ReactiveComponent
-import io.gierla.rccore.annotations.State
-import io.gierla.rccore.annotations.Structure
+import io.gierla.rccore.annotations.*
 import io.gierla.rccore.state.StateDispatcher
 import io.gierla.rccore.state.StateDrawer
 import io.gierla.rccore.state.StateSubscriber
@@ -46,6 +43,29 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         roundEnvironment: RoundEnvironment?
     ): Boolean {
 
+        val rcReceiversProcessor = RCReceiversProcessor(messager, filer, processingEnv)
+        val receivers = rcReceiversProcessor.getReceivers(roundEnvironment)
+        rcReceiversProcessor.processReceivers(receivers)
+
+        //handleReactiveComonentAnnotation(roundEnvironment)
+
+        return true
+
+    }
+
+    private fun handleRCReceiversAnnotation(roundEnvironment: RoundEnvironment?) {
+
+        val annotatedElements = roundEnvironment?.getElementsAnnotatedWith(RCReceivers::class.java) ?: mutableSetOf()
+        val elementsWithMatchingType = listOf<TypeElement>(*ElementFilter.typesIn(annotatedElements).toTypedArray())
+
+        elementsWithMatchingType
+            .forEach {
+                createComponentFile(it)
+            }
+
+    }
+
+    private fun handleReactiveComonentAnnotation(roundEnvironment: RoundEnvironment?) {
         val annotatedElements = roundEnvironment?.getElementsAnnotatedWith(ReactiveComponent::class.java) ?: mutableSetOf()
         val elementsWithMatchingType = listOf<TypeElement>(*ElementFilter.typesIn(annotatedElements).toTypedArray())
 
@@ -54,9 +74,6 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             .forEach {
                 createComponentFile(it)
             }
-
-        return true
-
     }
 
     private fun createComponentFile(element: TypeElement) {
@@ -66,7 +83,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         var viewTypeMirror: TypeMirror? = null
 
         try {
-            element.getAnnotation(ReactiveComponent::class.java).viewType
+            //element.getAnnotation(ReactiveComponent::class.java).viewType
         } catch (e: MirroredTypeException) {
             viewTypeMirror = e.typeMirror
         }
@@ -431,7 +448,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         return true
     }
 
-    override fun getSupportedAnnotationTypes(): MutableSet<String> = mutableSetOf(ReactiveComponent::class.java.name)
+    override fun getSupportedAnnotationTypes(): MutableSet<String> = mutableSetOf(ReactiveComponent::class.java.name, RCReceivers::class.java.name)
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latestSupported()
 
