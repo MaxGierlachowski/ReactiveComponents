@@ -16,6 +16,7 @@ import io.reactivex.disposables.CompositeDisposable
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
+import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.MirroredTypeException
@@ -78,7 +79,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             val viewStateDrawerName = viewName + "StateDrawer"
             val viewStateDispatcherName = viewName + "StateDispatcher"
 
-            val viewTypeClass = typeMirror
+            val parentType = processingEnv.typeUtils.asElement(typeMirror) as TypeElement
 
             val componentChildren = listOf<TypeElement>(*ElementFilter.typesIn(element.enclosedElements).toTypedArray())
 
@@ -124,7 +125,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                     stateElement?.let { mStateElement ->
                         actionElement?.let { mActionElement ->
                             createStateClasses(packageName, mStateElement, mStructureElement, viewStateDispatcherName, viewStateDrawerName)
-                            createViewClasses(packageName, viewName, viewTypeClass.toString(), stateElement, structureElement, mActionElement, viewStateDispatcherName, viewStateDrawerName)
+                            createViewClasses(packageName, viewName, parentType, stateElement, structureElement, mActionElement, viewStateDispatcherName, viewStateDrawerName)
                         }
                     }
                 }
@@ -133,7 +134,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
                 messager?.printMessage(
                     Diagnostic.Kind.ERROR,
-                    "ReactiveComponent class requires exactly one class annotaed with State, exactly one class annotated with Action and exactly one Interface annotated with Structure! Howerver if you don't need them they can be empty."
+                    "ReactiveComponent classes requires exactly one class annotaed with State, exactly one class annotated with Action and exactly one Interface annotated with Structure! Howerver if you don't need them they can be empty."
                 )
 
             }
@@ -149,7 +150,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     }
 
-    private fun createViewClasses(packageName: String, viewName: String, parentViewType: String, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
+    private fun createViewClasses(packageName: String, viewName: String, parentViewType: TypeElement, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
 
         val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
@@ -161,33 +162,28 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val ViewStoreType = DefaultStore::class.asTypeName()
         val DispatcherType = StateDispatcher::class.asTypeName()
 
-        val ViewParentType = ClassName("", parentViewType)
-        val ContextType = ClassName("android.content", "Context")
-        val AttributeSetType = ClassName("android.util", "AttributeSet")
-
         val viewTypeSpecBuilder = TypeSpec.classBuilder(viewName + "Impl")
             .addModifiers(KModifier.ABSTRACT)
 
-        viewTypeSpecBuilder.primaryConstructor(
-            FunSpec.constructorBuilder()
-                .addAnnotation(JvmOverloads::class)
-                .addParameter("context", ContextType)
-                .addParameter(
-                    ParameterSpec.builder("attrs", AttributeSetType.copy(nullable = true))
-                        .defaultValue("null")
-                        .build()
+        viewTypeSpecBuilder.superclass(parentViewType.asClassName())
+
+        parentViewType.enclosedElements.filter { it.kind == ElementKind.CONSTRUCTOR }.filterIsInstance<ExecutableElement>().forEach { constructor ->
+            val constructorBuilder = FunSpec.constructorBuilder()
+            val parameterNames = mutableSetOf<String>()
+            constructor.parameters.forEach { variable ->
+                parameterNames.add(variable.simpleName.toString())
+                var typeNameToUse = variable.asType().asTypeName()
+                if(!variable.asType().kind.isPrimitive) {
+                    typeNameToUse =  typeNameToUse.copy(nullable = true)
+                }
+                constructorBuilder.addParameter(
+                    ParameterSpec.builder(variable.simpleName.toString(), typeNameToUse).build()
                 )
-                .addParameter(
-                    ParameterSpec.builder("defStyleAttr", Int::class.asTypeName())
-                        .defaultValue("0")
-                        .build()
-                )
-                .build()
-        )
-        viewTypeSpecBuilder.superclass(ViewParentType)
-        viewTypeSpecBuilder.addSuperclassConstructorParameter("context")
-        viewTypeSpecBuilder.addSuperclassConstructorParameter("attrs")
-        viewTypeSpecBuilder.addSuperclassConstructorParameter("defStyleAttr")
+            }
+
+            constructorBuilder.callSuperConstructor(*parameterNames.toTypedArray())
+            viewTypeSpecBuilder.addFunction(constructorBuilder.build())
+        }
 
         viewTypeSpecBuilder.addFunction(
             FunSpec.builder("getViewStructure")
