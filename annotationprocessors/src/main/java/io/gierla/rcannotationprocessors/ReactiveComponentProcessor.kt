@@ -13,6 +13,7 @@ import io.gierla.rccore.state.StateSubscriber
 import io.gierla.rccore.store.DefaultStore
 import io.gierla.rccore.view.Variation
 import io.reactivex.disposables.CompositeDisposable
+import javax.annotation.Nonnull
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
@@ -173,7 +174,8 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             constructor.parameters.forEach { variable ->
                 parameterNames.add(variable.simpleName.toString())
                 var typeNameToUse = variable.asType().asTypeName()
-                if(!variable.asType().kind.isPrimitive) {
+
+                if(!variable.asType().kind.isPrimitive && variable.annotationMirrors.map { it.toString() }.filter { it.contains("NonNull") }.isEmpty()) {
                     typeNameToUse =  typeNameToUse.copy(nullable = true)
                 }
                 constructorBuilder.addParameter(
