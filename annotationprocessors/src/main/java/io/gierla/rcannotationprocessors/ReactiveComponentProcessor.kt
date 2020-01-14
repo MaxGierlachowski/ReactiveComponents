@@ -358,7 +358,6 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
                 viewStateDrawerTypeSpecBuilder.addFunction(
                     FunSpec.builder("draw${variableType.toString().capitalize()}")
-                        .addModifiers(KModifier.ABSTRACT)
                         .addParameter("view", ViewStructureType)
                         .addParameter("state", ViewStateType)
                         .build()
