@@ -10,7 +10,7 @@ dependencies {
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    // ReactiveX
+    // Reactive codign
     implementation 'io.reactivex.rxjava2:rxkotlin:2.4.0'
 }
 

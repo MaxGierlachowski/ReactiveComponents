@@ -5,9 +5,12 @@ import io.gierla.rccore.action.ActionSubscriber
 import io.gierla.rccore.state.State
 import io.gierla.rccore.state.StateDiffPair
 import io.gierla.rccore.state.StateSubscriber
+import io.reactivex.Observable
+import io.reactivex.Scheduler
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
@@ -48,11 +51,13 @@ class DefaultStore<S : State, A : Action>(
         actionSubscribers.onNext(action)
     }
 
-    override fun subscribeState(subscriber: StateSubscriber<S>): Disposable {
+    override fun subscribeState(subscriber: StateSubscriber<S>, options: ((Observable<StateDiffPair<S>>) -> Observable<StateDiffPair<S>>)?): Disposable {
         // Subscribe subscriber to state and return disposable to allow unsubscribeState(disposable: Disposable) later
         // Initialy call subscriber because we could already have a state. BehaviorSubject is going to call it the first time itself but oldState and newState would be the same and because of the diff it wouldn't be rendered
         subscriber.onNext(initialState, state)
-        val disposable = stateSubscribers.subscribeBy(
+        val subject = stateSubscribers
+        val configuredObservable = options?.invoke(subject) ?: subject
+        val disposable = configuredObservable.subscribeBy(
             onNext = { subscriber.onNext(it.oldState, it.newState) },
             onComplete = { subscriber.onComplete() },
             onError = { subscriber.onError(it) }

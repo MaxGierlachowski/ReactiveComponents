@@ -7,11 +7,13 @@ import io.gierla.rccore.annotations.Action
 import io.gierla.rccore.annotations.ReactiveComponent
 import io.gierla.rccore.annotations.State
 import io.gierla.rccore.annotations.Structure
+import io.gierla.rccore.state.StateDiffPair
 import io.gierla.rccore.state.StateDispatcher
 import io.gierla.rccore.state.StateDrawer
 import io.gierla.rccore.state.StateSubscriber
 import io.gierla.rccore.store.DefaultStore
 import io.gierla.rccore.view.Variation
+import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import javax.annotation.Nonnull
 import javax.annotation.processing.*
@@ -194,6 +196,15 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 .build()
         )
 
+        viewTypeSpecBuilder.addFunction(
+            FunSpec.builder("configureSubscriber")
+                .returns(Observable::class.asClassName().parameterizedBy(StateDiffPair::class.asClassName().parameterizedBy(ViewStateType)))
+                .addParameter(ParameterSpec.builder("config", Observable::class.asClassName().parameterizedBy(StateDiffPair::class.asClassName().parameterizedBy(ViewStateType))).build())
+                .addStatement("return config")
+                .addModifiers(KModifier.PROTECTED, KModifier.OPEN)
+                .build()
+        )
+
         viewTypeSpecBuilder.addProperty(
             PropertySpec
                 .builder(
@@ -267,7 +278,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 .builder("onAttachedToWindow")
                 .addModifiers(KModifier.OVERRIDE)
                 .addStatement("super.onAttachedToWindow()")
-                .addStatement("disposable.add(%N.subscribeState(%L))", "store", stateSubscriber)
+                .addStatement("disposable.add(%N.subscribeState(%L, {a -> configureSubscriber(a)}))", "store", stateSubscriber)
                 .build()
         )
 
