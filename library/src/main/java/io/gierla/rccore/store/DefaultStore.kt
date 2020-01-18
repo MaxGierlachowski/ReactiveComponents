@@ -18,7 +18,7 @@ class DefaultStore<S : State, A : Action>(
     private val initialState: S
 ) : Store<S, A> {
 
-    private val stateSubscribers = BehaviorSubject.create<StateDiffPair<S>>()
+    private val stateSubscribers = PublishSubject.create<StateDiffPair<S>>()
     private val stateSubscriptions = CompositeDisposable()
 
     private val actionSubscribers = PublishSubject.create<A>()
@@ -54,7 +54,7 @@ class DefaultStore<S : State, A : Action>(
     override fun subscribeState(subscriber: StateSubscriber<S>, options: ((Observable<StateDiffPair<S>>) -> Observable<StateDiffPair<S>>)?): Disposable {
         // Subscribe subscriber to state and return disposable to allow unsubscribeState(disposable: Disposable) later
         // Initialy call subscriber because we could already have a state. BehaviorSubject is going to call it the first time itself but oldState and newState would be the same and because of the diff it wouldn't be rendered
-        subscriber.onNext(initialState, state)
+
         val subject = stateSubscribers
         val configuredObservable = options?.invoke(subject) ?: subject
         val disposable = configuredObservable.subscribeBy(
@@ -63,6 +63,8 @@ class DefaultStore<S : State, A : Action>(
             onError = { subscriber.onError(it) }
         )
         stateSubscriptions.add(disposable)
+        // Emit the initial state with the current state a single time after subsciption so that the while ui will be updated once
+        subscriber.onNext(initialState, state)
         return disposable
     }
 
