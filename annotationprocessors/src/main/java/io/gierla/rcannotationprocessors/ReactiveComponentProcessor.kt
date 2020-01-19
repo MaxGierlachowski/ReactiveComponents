@@ -266,7 +266,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             .addFunction(
                 FunSpec.builder("onNext")
                     .addModifiers(KModifier.OVERRIDE)
-                    .addParameter("oldState", ViewStateType)
+                    .addParameter("oldState", ViewStateType.copy(nullable = true))
                     .addParameter("newState", ViewStateType)
                     .addStatement("dispatcher.dispatchUpdates(getViewStructure(), oldState, newState)")
                     .build()

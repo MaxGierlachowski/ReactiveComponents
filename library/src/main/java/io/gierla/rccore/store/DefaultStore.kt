@@ -64,7 +64,7 @@ class DefaultStore<S : State, A : Action>(
         )
         stateSubscriptions.add(disposable)
         // Emit the initial state with the current state a single time after subsciption so that the while ui will be updated once
-        subscriber.onNext(initialState, state)
+        subscriber.onNext(null, state)
         return disposable
     }
 
