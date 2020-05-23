@@ -1,17 +1,14 @@
 package io.gierla.rccore.store
 
 import io.gierla.rccore.action.Action
-import io.gierla.rccore.action.ActionSubscriber
+import io.gierla.rccore.action.ActionListener
 import io.gierla.rccore.state.State
 import io.gierla.rccore.state.StateDiffPair
 import io.gierla.rccore.state.StateSubscriber
 import io.reactivex.Observable
-import io.reactivex.Scheduler
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
 class DefaultStore<S : State, A : Action>(
@@ -21,11 +18,7 @@ class DefaultStore<S : State, A : Action>(
     private val stateSubscribers = PublishSubject.create<StateDiffPair<S>>()
     private val stateSubscriptions = CompositeDisposable()
 
-    private val actionSubscribers = PublishSubject.create<A>()
-    private val actionSubscriptions = CompositeDisposable()
-
-    private var onDestroyStateListener: () -> Unit = {}
-    private var onDestroyActionListener: () -> Unit = {}
+    private var _actionListener: ActionListener<A>? = null
 
     private var state: S = initialState
         set(value) {
@@ -48,7 +41,7 @@ class DefaultStore<S : State, A : Action>(
 
     override fun dispatch(action: A) {
         // Send action to subscribers
-        actionSubscribers.onNext(action)
+        _actionListener?.onNext(action)
     }
 
     override fun subscribeState(subscriber: StateSubscriber<S>, options: ((Observable<StateDiffPair<S>>) -> Observable<StateDiffPair<S>>)?): Disposable {
@@ -63,7 +56,7 @@ class DefaultStore<S : State, A : Action>(
             onError = { subscriber.onError(it) }
         )
         stateSubscriptions.add(disposable)
-        // Emit the initial state with the current state a single time after subsciption so that the while ui will be updated once
+        // Emit the the current state a single time after subsciption so that the whole ui will be updated once
         subscriber.onNext(null, state)
         return disposable
     }
@@ -73,47 +66,15 @@ class DefaultStore<S : State, A : Action>(
         stateSubscriptions.remove(disposable)
     }
 
-    override fun subscribeAction(subscriber: ActionSubscriber<A>): Disposable {
-        // Subscribe subscriber to actions and return disposable to allow unsubscribeAction(disposable: Disposable) later
-        val disposable = actionSubscribers.subscribeBy(
-            onNext = { subscriber.onNext(it) },
-            onComplete = { subscriber.onComplete() },
-            onError = { subscriber.onError(it) }
-        )
-        actionSubscriptions.add(disposable)
-        return disposable
-    }
-
-    override fun unsubscribeAction(disposable: Disposable) {
-        // Dispose and remove disposable from CompositeDisposable
-        actionSubscriptions.remove(disposable)
-    }
-
-    override fun destroyActionListener() {
-        actionSubscriptions.clear()
-        onDestroyActionListener.invoke()
-    }
-
-    override fun destroyStateListener() {
-        stateSubscriptions.clear()
-        onDestroyStateListener.invoke()
-        state = initialState
+    override fun setActionListener(listener: ActionListener<A>) {
+        this._actionListener = listener
     }
 
     override fun destroy() {
         // Remove all remaining subscriptions
         stateSubscriptions.clear()
-        onDestroyStateListener.invoke()
-        actionSubscriptions.clear()
-        onDestroyActionListener.invoke()
+        _actionListener = null
         state = initialState
     }
 
-    override fun setOnDestroyActionListener(onDestroy: () -> Unit) {
-        onDestroyActionListener = onDestroy
-    }
-
-    override fun setOnDestroyStateListener(onDestroy: () -> Unit) {
-        onDestroyStateListener = onDestroy
-    }
 }

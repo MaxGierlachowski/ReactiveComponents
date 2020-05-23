@@ -6,7 +6,7 @@ apply plugin: 'kotlin-kapt'
 android {
 
     compileSdkVersion 28
-    buildToolsVersion "29.0.2"
+    buildToolsVersion "29.0.3"
 
 
     defaultConfig {
@@ -33,6 +33,9 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8
     }
 
+    viewBinding {
+        enabled = true
+    }
 }
 
 dependencies {
