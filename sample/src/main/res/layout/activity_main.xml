@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".Main">
 
-    <io.gierla.rcsample.component.MyView
+    <io.gierla.rcsample.component.MyViewTest
         android:id="@+id/my_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
