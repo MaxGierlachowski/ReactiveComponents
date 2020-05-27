@@ -1,30 +1,32 @@
 package io.gierla.rcsample
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import io.gierla.rccore.action.ActionListener
-import io.gierla.rcsample.component.MyView
-import io.gierla.rcsample.component.MyViewVariation
+import io.gierla.rcsample.component.MyViewTest
+import io.gierla.rcsample.component.MyViewTestVariation
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 class Main : AppCompatActivity() {
 
+    @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val myView = findViewById<MyView>(R.id.my_view)
-        myView.setVariation(MyViewVariation.MAIN, null)
-        myView.store.setActionListener(object : ActionListener<MyView.ViewAction> {
-            override fun onNext(action: MyView.ViewAction) {
+        val myView = findViewById<MyViewTest>(R.id.my_view)
+        myView.setVariation(MyViewTestVariation.MAIN, null)
+        myView.setActionListener(object : ActionListener<MyViewTest.ViewAction> {
+            override fun onNext(action: MyViewTest.ViewAction) {
                 when (action) {
-                    is MyView.ViewAction.TextClick -> {
+                    is MyViewTest.ViewAction.TextClick -> {
                         Toast.makeText(applicationContext, action.text, Toast.LENGTH_LONG).show()
                     }
                 }
             }
         })
-        myView.store.updateState { currentState ->
+        myView.updateState { currentState ->
             currentState.copy(
                 text = "Hello World!"
             )
