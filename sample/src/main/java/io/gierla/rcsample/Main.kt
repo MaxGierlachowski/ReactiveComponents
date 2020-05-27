@@ -28,7 +28,7 @@ class Main : AppCompatActivity() {
         })
         myView.updateState { currentState ->
             currentState.copy(
-                text = "Hello World!"
+                text = "hello world!"
             )
         }
     }

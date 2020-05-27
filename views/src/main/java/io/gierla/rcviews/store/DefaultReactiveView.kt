@@ -17,10 +17,7 @@ abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D: Stat
 
     private val store: ViewStore<S, A, V> = DefaultViewStore(initialState = initialState)
 
-    var viewStructure: V? = null
-        private set
-
-    private var viewStructureGetter: () -> V? = { null }
+    override var viewStructure: V? = null
 
     private var storeJob: Job? = null
 
@@ -28,13 +25,8 @@ abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D: Stat
         lifecycle.addObserver(this)
     }
 
-    override fun setViewStructureGetter(viewStructureGetter: () -> V?) {
-        this.viewStructureGetter = viewStructureGetter
-    }
-
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onViewAttached() {
-        viewStructure = viewStructureGetter.invoke()
         storeJob = CoroutineScope(Dispatchers.Main).launch {
             store.subscribeState(object : StateSubscriber<S> {
                 override suspend fun onNext(oldState: S?, newState: S) {

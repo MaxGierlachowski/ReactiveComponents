@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.MenuItemCompat
 import io.gierla.rcannotations.ReactiveComponent
 import io.gierla.rccore.action.Action
 import io.gierla.rccore.state.State
@@ -25,11 +26,9 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
             dispatchAction(ViewAction.TextClick(getState().text))
         }
 
-        setViewStructureGetter { viewStructure }
-    }
-
-    private val viewStructure: ViewStructure = object : ViewStructure {
-        override val testView by lazy { findViewById<TextView>(R.id.text_view) }
+        viewStructure = object : ViewStructure {
+            override val testView by lazy { findViewById<TextView>(R.id.text_view) }
+        }
     }
 
     override fun onAttachedToWindow() {

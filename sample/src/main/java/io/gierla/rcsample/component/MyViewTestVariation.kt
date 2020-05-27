@@ -11,7 +11,7 @@ enum class MyViewTestVariation : Variation<MyViewTest.ViewStructure, MyViewTestS
 
         override fun getStateDrawer(): MyViewTestStateDrawer = object : MyViewTestStateDrawer {
             override fun drawText(view: MyViewTest.ViewStructure, state: MyViewTest.ViewState) {
-                view.testView.text = state.text
+                view.testView.text = state.text.capitalize()
             }
         }
     }
