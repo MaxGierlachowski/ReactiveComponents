@@ -1,4 +1,4 @@
-package io.gierla.rccore.view
+package io.gierla.rcviews.view
 
 import io.gierla.rccore.state.StateDrawer
 

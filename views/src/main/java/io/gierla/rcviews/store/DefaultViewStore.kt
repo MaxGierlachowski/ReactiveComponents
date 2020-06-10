@@ -3,10 +3,10 @@ package io.gierla.rcviews.store
 import io.gierla.rccore.action.Action
 import io.gierla.rccore.helper.ControlledRunner
 import io.gierla.rccore.state.State
-import io.gierla.rccore.state.StateDispatcher
 import io.gierla.rccore.store.DefaultStore
 import io.gierla.rccore.store.Store
-import io.gierla.rccore.view.Structure
+import io.gierla.rcviews.view.StateDispatcher
+import io.gierla.rcviews.view.Structure
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext

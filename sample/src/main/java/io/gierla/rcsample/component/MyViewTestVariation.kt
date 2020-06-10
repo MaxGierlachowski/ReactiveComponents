@@ -1,7 +1,7 @@
 package io.gierla.rcsample.component
 
 import android.graphics.Color
-import io.gierla.rccore.view.Variation
+import io.gierla.rcviews.view.Variation
 
 enum class MyViewTestVariation : Variation<MyViewTest.ViewStructure, MyViewTestStateDrawer> {
     MAIN {

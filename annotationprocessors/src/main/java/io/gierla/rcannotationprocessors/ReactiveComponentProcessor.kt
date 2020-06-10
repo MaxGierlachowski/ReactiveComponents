@@ -7,9 +7,9 @@ import io.gierla.rcannotations.Action
 import io.gierla.rcannotations.ReactiveComponent
 import io.gierla.rcannotations.State
 import io.gierla.rcannotations.Structure
-import io.gierla.rccore.state.StateDispatcher
 import io.gierla.rccore.state.StateDrawer
-import io.gierla.rccore.view.Variation
+import io.gierla.rcviews.view.StateDispatcher
+import io.gierla.rcviews.view.Variation
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
