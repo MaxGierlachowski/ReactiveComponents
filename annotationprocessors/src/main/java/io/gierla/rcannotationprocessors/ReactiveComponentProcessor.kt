@@ -8,13 +8,15 @@ import io.gierla.rcannotations.ReactiveComponent
 import io.gierla.rcannotations.State
 import io.gierla.rcannotations.Structure
 import io.gierla.rccore.state.StateDrawer
+import io.gierla.rcviews.store.DefaultReactiveView
+import io.gierla.rcviews.store.ReactiveView
 import io.gierla.rcviews.view.StateDispatcher
 import io.gierla.rcviews.view.Variation
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.TypeElement
+import javax.lang.model.element.*
+import javax.lang.model.type.MirroredTypeException
+import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.ElementFilter
 import javax.tools.Diagnostic
 
@@ -58,72 +60,95 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
         val packageName = processingEnv.elementUtils.getPackageOf(element).toString()
 
-        val viewName = element.simpleName.toString()
+        var viewTypeMirror: TypeMirror? = null
 
-        val viewStateDrawerName = viewName + "StateDrawer"
-        val viewStateDispatcherName = viewName + "StateDispatcher"
-
-        val componentChildren = listOf<TypeElement>(*ElementFilter.typesIn(element.enclosedElements).toTypedArray())
-
-        val stateChildren = componentChildren
-            .filter { childElement -> childElement.getAnnotation(State::class.java) != null }
-            .filter { childElement -> isClass(childElement, "State") && isPublic(childElement, "State") && isNotAbstract(childElement, "State") }
-
-        val actionChildren = componentChildren
-            .filter { childElement -> childElement.getAnnotation(Action::class.java) != null }
-            .filter { childElement -> isClass(childElement, "Action") && isPublic(childElement, "Action") }
-
-        val structureChildren = componentChildren
-            .filter { childElement -> childElement.getAnnotation(Structure::class.java) != null }
-            .filter { childElement -> isInterface(childElement, "Structure") && isPublic(childElement, "Structure") }
-
-        var foundState = false
-        var stateElement: TypeElement? = null
-
-        var foundAction = false
-        var actionElement: TypeElement? = null
-
-        var foundStructure = false
-        var structureElement: TypeElement? = null
-
-        if (stateChildren.size == 1) {
-            foundState = true
-            stateElement = stateChildren.firstOrNull()
+        try {
+            element.getAnnotation(ReactiveComponent::class.java).viewType
+        } catch (e: MirroredTypeException) {
+            viewTypeMirror = e.typeMirror
         }
 
-        if (actionChildren.size == 1) {
-            foundAction = true
-            actionElement = actionChildren.firstOrNull()
-        }
+        viewTypeMirror?.let { typeMirror ->
 
-        if (structureChildren.size == 1) {
-            foundStructure = true
-            structureElement = structureChildren.firstOrNull()
-        }
+            val viewName = element.simpleName.toString()
 
-        if (foundAction && foundState && foundStructure) {
+            val viewStateDrawerName = viewName + "StateDrawer"
+            val viewStateDispatcherName = viewName + "StateDispatcher"
 
-            structureElement?.let { mStructureElement ->
-                stateElement?.let { mStateElement ->
-                    actionElement?.let { mActionElement ->
-                        createStateClasses(packageName, mStateElement, mStructureElement, viewStateDispatcherName, viewStateDrawerName)
-                        createViewClasses(packageName, viewName, stateElement, structureElement, mActionElement, viewStateDispatcherName, viewStateDrawerName)
-                    }
-                }
+            val parentType = processingEnv.typeUtils.asElement(typeMirror) as TypeElement
+
+            val componentChildren = listOf<TypeElement>(*ElementFilter.typesIn(element.enclosedElements).toTypedArray())
+
+            val stateChildren = componentChildren
+                .filter { childElement -> childElement.getAnnotation(State::class.java) != null }
+                .filter { childElement -> isClass(childElement, "State") && isPublic(childElement, "State") && isNotAbstract(childElement, "State") }
+
+            val actionChildren = componentChildren
+                .filter { childElement -> childElement.getAnnotation(Action::class.java) != null }
+                .filter { childElement -> isClass(childElement, "Action") && isPublic(childElement, "Action") }
+
+            val structureChildren = componentChildren
+                .filter { childElement -> childElement.getAnnotation(Structure::class.java) != null }
+                .filter { childElement -> isInterface(childElement, "Structure") && isPublic(childElement, "Structure") }
+
+            var foundState = false
+            var stateElement: TypeElement? = null
+
+            var foundAction = false
+            var actionElement: TypeElement? = null
+
+            var foundStructure = false
+            var structureElement: TypeElement? = null
+
+            if (stateChildren.size == 1) {
+                foundState = true
+                stateElement = stateChildren.firstOrNull()
             }
 
-        } else {
+            if (actionChildren.size == 1) {
+                foundAction = true
+                actionElement = actionChildren.firstOrNull()
+            }
+
+            if (structureChildren.size == 1) {
+                foundStructure = true
+                structureElement = structureChildren.firstOrNull()
+            }
+
+            if (foundAction && foundState && foundStructure) {
+
+                structureElement?.let { mStructureElement ->
+                    stateElement?.let { mStateElement ->
+                        actionElement?.let { mActionElement ->
+                            createStateClasses(packageName, mStateElement, mStructureElement, viewStateDispatcherName, viewStateDrawerName)
+                            createViewClasses(packageName, viewName, parentType, stateElement, structureElement, mActionElement, viewStateDispatcherName, viewStateDrawerName)
+                        }
+                    }
+                }
+
+            } else {
+
+                messager?.printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "ReactiveComponent classes requires exactly one class annotaed with State, exactly one class annotated with Action and exactly one Interface annotated with Structure! Howerver if you don't need them they can be empty."
+                )
+
+            }
+
+        } ?: run {
 
             messager?.printMessage(
                 Diagnostic.Kind.ERROR,
-                "ReactiveComponent classes requires exactly one class annotaed with State, exactly one class annotated with Action and exactly one Interface annotated with Structure! Howerver if you don't need them they can be empty."
+                "ReactiveComponent annotation requiers a viewType parameter!"
             )
 
         }
 
     }
 
-    private fun createViewClasses(packageName: String, viewName: String, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
+    data class ConstructorVar(val name: String, val nullable: Boolean)
+
+    private fun createViewClasses(packageName: String, viewName: String, parentViewType: TypeElement, stateElement: TypeElement, structureElement: TypeElement, actionElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
 
         val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
@@ -132,32 +157,78 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val ViewStateDrawerType = ClassName(packageName, viewStateDrawerName)
         val ViewStateDisptacherType = ClassName(packageName, viewStateDispatcherName)
 
-        val DefaultReactiveViewType = ClassName("io.gierla.rcviews.store", "DefaultReactiveView")
+        val ReactiveViewType = ReactiveView::class.asTypeName()
 
-        val viewTypeSpecBuilder = TypeSpec.classBuilder(viewName + "Impl")
+        val DefaultReactiveViewType = DefaultReactiveView::class.asTypeName()
 
-        val LifecycleObserverType = ClassName("androidx.lifecycle", "LifecycleObserver")
+        val viewTypeSpecBuilder = TypeSpec.classBuilder(viewName + "Impl").addModifiers(KModifier.ABSTRACT)
 
-        viewTypeSpecBuilder.superclass(
-            DefaultReactiveViewType.parameterizedBy(
-                ViewStateType,
-                ViewActionType,
-                ViewStructureType,
-                ViewStateDrawerType
-            )
-        )
-        viewTypeSpecBuilder.addSuperinterface(LifecycleObserverType)
+        viewTypeSpecBuilder.superclass(parentViewType.asClassName())
 
-        val LifecycleType = ClassName("androidx.lifecycle", "Lifecycle")
+        val parameters = mutableMapOf<TypeName, MutableList<ConstructorVar>>()
+        var constructorCount = 0;
+
+        parentViewType.enclosedElements.filter { it.kind == ElementKind.CONSTRUCTOR }.filterIsInstance<ExecutableElement>().forEach { constructor ->
+            constructor.parameters.forEach { variable ->
+                val typeNameToUse = variable.asType().asTypeName()
+
+                val newConstructorVar = ConstructorVar(name = variable.simpleName.toString(), nullable = !variable.asType().kind.isPrimitive && variable.annotationMirrors.map { it.toString() }.filter { it.contains("NonNull") }.isEmpty())
+                if (parameters.containsKey(typeNameToUse)) {
+                    parameters[typeNameToUse]?.add(newConstructorVar)
+                } else {
+                    parameters[typeNameToUse] = mutableListOf(newConstructorVar)
+                }
+            }
+
+            constructorCount++;
+        }
 
         val constructorBuilder = FunSpec.constructorBuilder()
+        parameters.forEach { (key, value) ->
+            if (value.size == constructorCount) {
+                constructorBuilder.addParameter(
+                    ParameterSpec.builder(value[0].name, key.copy(nullable = value[0].nullable)).build()
+                )
+            } else {
+                constructorBuilder.addParameter(
+                    ParameterSpec.builder(value[0].name, key.copy(nullable = value[0].nullable)).defaultValue(if(value[0].nullable) "null" else getPrimitiveDefault(key)).build()
+                )
+            }
+            viewTypeSpecBuilder.addSuperclassConstructorParameter(value[0].name)
+        }
         constructorBuilder.addParameter(
-            ParameterSpec.builder("lifecycle", LifecycleType).build()
+            ParameterSpec.builder("reactiveView", DefaultReactiveViewType.parameterizedBy(ViewStateType, ViewActionType, ViewStructureType, ViewStateDrawerType)).defaultValue("DefaultReactiveView(%T())", ViewStateType).build()
+
+        )
+        constructorBuilder.addAnnotation(JvmOverloads::class)
+        viewTypeSpecBuilder.primaryConstructor(constructorBuilder.build())
+
+        viewTypeSpecBuilder.addProperty(
+            PropertySpec.builder("reactiveView", DefaultReactiveViewType.parameterizedBy(ViewStateType, ViewActionType, ViewStructureType, ViewStateDrawerType))
+                .initializer("reactiveView")
+                .addModifiers(KModifier.PRIVATE)
+                .build()
         )
 
-        constructorBuilder.callSuperConstructor("lifecycle", ViewStateType.simpleName + "()")
+        viewTypeSpecBuilder.addSuperinterface(ReactiveViewType.parameterizedBy(ViewStateType, ViewActionType, ViewStructureType, ViewStateDrawerType), CodeBlock.of("reactiveView"))
 
-        viewTypeSpecBuilder.addFunction(constructorBuilder.build())
+        viewTypeSpecBuilder.addFunction(
+            FunSpec
+                .builder("onAttachedToWindow")
+                .addModifiers(KModifier.OVERRIDE)
+                .addStatement("super.onAttachedToWindow()")
+                .addStatement("reactiveView.onViewAttached()")
+                .build()
+        )
+
+        viewTypeSpecBuilder.addFunction(
+            FunSpec
+                .builder("onDetachedFromWindow")
+                .addModifiers(KModifier.OVERRIDE)
+                .addStatement("reactiveView.onViewDetached()")
+                .addStatement("super.onDetachedFromWindow()")
+                .build()
+        )
 
         val VariationCallbackType = LambdaTypeName.get(
             parameters = listOf(
@@ -174,8 +245,8 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 .addModifiers(KModifier.OVERRIDE)
                 .addParameter("variation", Variation::class.asTypeName().parameterizedBy(ViewStructureType, ViewStateDrawerType))
                 .addParameter(ParameterSpec.builder("callback", VariationCallbackType.copy(nullable = true)).build())
-                .addStatement("viewStructure?.let { variation.init(it) }")
-                .addStatement("setStateDispatcher(%T(variation.getStateDrawer(), callback))", ViewStateDisptacherType)
+                .addStatement("reactiveView.setVariation(variation)")
+                .addStatement("reactiveView.setStateDispatcher(%T(variation.getStateDrawer(), callback))", ViewStateDisptacherType)
                 .build()
         )
 
@@ -183,6 +254,18 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
         filer?.let { viewFile.writeTo(it) }
 
+    }
+
+    private fun getPrimitiveDefault(typeName: TypeName): String {
+        return when(typeName) {
+            Int::class.asTypeName(), Long::class.asTypeName(), Short::class.asTypeName(), Byte::class.asTypeName() -> "0"
+            Boolean::class.asTypeName() -> "false"
+            Double::class.asTypeName() -> "0.0"
+            Float::class.asTypeName() -> "0.0f"
+            Char::class.asTypeName() -> "'0'"
+            String::class.asTypeName() -> "\"\""
+            else -> ""
+        }
     }
 
     private fun createStateClasses(packageName: String, stateElement: TypeElement, structureElement: TypeElement, viewStateDispatcherName: String, viewStateDrawerName: String) {
