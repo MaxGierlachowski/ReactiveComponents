@@ -18,7 +18,7 @@ dependencies {
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    // Available Annotations
+    // Available Annotations and library classes
     implementation project(':views')
 
     // Auto register annotation
@@ -27,6 +27,9 @@ dependencies {
 
     // Creating *.kt files
     implementation 'com.squareup:kotlinpoet:1.5.0'
+
+    // Concurrent coding
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.6"
 }
 
 sourceCompatibility = "8"

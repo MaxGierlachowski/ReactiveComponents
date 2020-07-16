@@ -14,7 +14,10 @@ import kotlinx.coroutines.withContext
 @ExperimentalCoroutinesApi
 class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
 
-    private val stateSubscribers = MutableStateFlow(StateDiffPair(null, initialState))
+    // This is used because StateFlow checks for equality of objects and in some cases we want to force it to emit the same value twice (e.g. when the stateDispatcher of an reactive component is changed)
+    private var updateBool = false
+
+    private val stateSubscribers = MutableStateFlow(StateDiffPair(null, initialState, updateBool))
 
     private var actionListener: ActionListener<A>? = null
 
@@ -32,7 +35,13 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
     override fun updateState(stateCallback: (S) -> S) {
         oldState = state
         state = stateCallback.invoke(state)
-        stateSubscribers.value = StateDiffPair(oldState = oldState, newState = state)
+        stateSubscribers.value = StateDiffPair(oldState = oldState, newState = state, updateBool = updateBool)
+    }
+
+    override fun notifyState() {
+        oldState = null
+        updateBool = !updateBool
+        stateSubscribers.value = StateDiffPair(oldState = oldState, newState = state, updateBool = updateBool)
     }
 
     override fun dispatchAction(action: A) {

@@ -12,7 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 
 @ExperimentalCoroutinesApi
-class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, private val defaultStoreDelegate: Store<S, A> = DefaultStore<S, A>(initialState)) : ViewStore<S, A, V>, Store<S, A> by defaultStoreDelegate {
+class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, private val defaultStoreDelegate: Store<S, A> = DefaultStore(initialState)) : ViewStore<S, A, V>, Store<S, A> by defaultStoreDelegate {
 
     private var controlledRunner = ControlledRunner<List<() -> Unit>>()
 

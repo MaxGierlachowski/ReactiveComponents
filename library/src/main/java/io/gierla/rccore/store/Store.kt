@@ -7,6 +7,7 @@ import io.gierla.rccore.state.StateSubscriber
 
 interface Store<S : State, A : Action> {
     fun updateState(stateCallback: (S) -> S)
+    fun notifyState()
     suspend fun subscribeState(subscriber: StateSubscriber<S>)
     fun dispatchAction(action: A)
     fun setActionListener(listener: ActionListener<A>)
