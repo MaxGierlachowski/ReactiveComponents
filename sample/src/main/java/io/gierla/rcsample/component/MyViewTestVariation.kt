@@ -14,16 +14,5 @@ enum class MyViewTestVariation : Variation<MyViewTest.ViewStructure, MyViewTestS
                 view.testView.text = state.text.capitalize()
             }
         }
-    },
-    TEST {
-        override fun init(view: MyViewTest.ViewStructure) {
-            view.testView.setTextColor(Color.MAGENTA)
-        }
-
-        override fun getStateDrawer(): MyViewTestStateDrawer = object : MyViewTestStateDrawer {
-            override fun drawText(view: MyViewTest.ViewStructure, state: MyViewTest.ViewState) {
-                view.testView.text = state.text.capitalize() + "next"
-            }
-        }
     }
 }

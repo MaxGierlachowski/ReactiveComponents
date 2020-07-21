@@ -1,7 +1,6 @@
 package io.gierla.rcsample.component
 
 import android.content.Context
-import android.os.Handler
 import android.util.AttributeSet
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -25,14 +24,6 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
                 override val testView by lazy { findViewById<TextView>(R.id.text_view) }
             }
         }
-
-        Handler().postDelayed({
-            setViewStructure {
-                object : ViewStructure {
-                    override val testView by lazy { findViewById<TextView>(R.id.text_view2) }
-                }
-            }
-        }, 10000)
 
         requireViewStructure().run {
             testView.setOnClickListener {

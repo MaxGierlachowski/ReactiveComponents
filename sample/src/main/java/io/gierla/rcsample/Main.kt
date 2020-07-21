@@ -33,8 +33,5 @@ class Main : AppCompatActivity() {
                 text = "hello world!"
             )
         }
-        Handler().postDelayed({
-            myView.setVariation(MyViewTestVariation.TEST)
-        }, 5000)
     }
 }
