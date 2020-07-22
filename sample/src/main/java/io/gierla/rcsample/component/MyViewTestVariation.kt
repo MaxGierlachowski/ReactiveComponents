@@ -1,15 +1,15 @@
 package io.gierla.rcsample.component
 
 import android.graphics.Color
-import io.gierla.rcviews.view.Variation
+import io.gierla.rccore.views.view.Variation
 
-enum class MyViewTestVariation : Variation<MyViewTest.ViewStructure, MyViewTestStateDrawer> {
+enum class MyViewTestVariation : Variation<MyViewTest.ViewStructure, MyViewTestStateHandler> {
     MAIN {
         override fun init(view: MyViewTest.ViewStructure) {
             view.testView.setTextColor(Color.MAGENTA)
         }
 
-        override fun getStateDrawer(): MyViewTestStateDrawer = object : MyViewTestStateDrawer {
+        override fun getStateHandler(): MyViewTestStateHandler = object : MyViewTestStateHandler {
             override fun drawText(view: MyViewTest.ViewStructure, state: MyViewTest.ViewState) {
                 view.testView.text = state.text.capitalize()
             }

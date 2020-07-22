@@ -1,9 +1,8 @@
 package io.gierla.rcsample
 
 import android.os.Bundle
-import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
-import io.gierla.rccore.action.ActionListener
+import io.gierla.rccore.main.action.ActionListener
 import io.gierla.rcsample.component.MyViewTest
 import io.gierla.rcsample.component.MyViewTestVariation
 import kotlinx.coroutines.ExperimentalCoroutinesApi

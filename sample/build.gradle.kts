@@ -62,6 +62,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Libraries.coroutinesCore}")
 
     // Library
-    implementation(project(":views"))
-    kapt(project(":annotationprocessors"))
+    implementation(project(":core"))
+    "kapt"(project(":annotationprocessor"))
 }

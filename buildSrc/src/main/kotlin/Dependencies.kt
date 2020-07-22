@@ -29,3 +29,8 @@ object Libraries {
         const val recyclerView = "1.1.0"
     }
 }
+
+object LibConfig {
+    const val groupId = "io.gierla.reactivecomponents"
+    const val version = "0.0.12"
+}

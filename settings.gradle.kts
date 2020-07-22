@@ -1,2 +1,2 @@
-include("sample", "annotations", "library", "views", "annotationprocessors")
+include("sample", "core", "annotationprocessor")
 rootProject.name = "ReactiveComponents"
