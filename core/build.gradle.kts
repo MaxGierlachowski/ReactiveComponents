@@ -27,4 +27,10 @@ tasks.withType<KotlinCompile> {
     }
 }
 
-apply(from = "publish.gradle.kts")
+extra.apply{
+    set("artifactId", "Core")
+    set("description", "The core library used to handle the reactive state of compound views.")
+}
+
+apply(from = "${rootDir}/create.gradle.kts")
+apply(from = "${rootDir}/publish.gradle.kts")

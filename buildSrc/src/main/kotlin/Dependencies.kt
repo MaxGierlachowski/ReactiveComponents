@@ -2,6 +2,8 @@ const val kotlinVersion = "1.3.72"
 
 object BuildPlugins {
     const val androidGradle = "4.0.1"
+    const val bintray = "1.8.5"
+    const val dokka = "0.10.1"
 }
 
 object AndroidSdk {

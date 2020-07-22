@@ -44,4 +44,10 @@ tasks.withType<KotlinCompile> {
     }
 }
 
-apply(from = "publish.gradle.kts")
+extra.apply{
+    set("artifactId", "AnnotationProcessor")
+    set("description", "Annotation processor used to make the use of reactive components easier.")
+}
+
+apply(from = "${rootDir}/create.gradle.kts")
+apply(from = "${rootDir}/publish.gradle.kts")

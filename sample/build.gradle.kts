@@ -62,6 +62,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Libraries.coroutinesCore}")
 
     // Library
-    implementation(project(":core"))
-    "kapt"(project(":annotationprocessor"))
+    implementation("io.gierla.reactivecomponents:Core:0.0.12")
+    kapt("io.gierla.reactivecomponents:AnnotationProcessor:0.0.12")
 }
