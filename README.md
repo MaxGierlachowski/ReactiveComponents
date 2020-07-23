@@ -35,7 +35,7 @@ implementation("io.gierla.reactivecomponents:Core:{version}")
 kapt("io.gierla.reactivecomponents:AnnotationProcessor:{version}")
 ```
 
-You can find the newest version in the binary repository: https://bintray.com/maxgierlachowski/ReactiveComponents
+You can find the newest version in the bintray repository: https://bintray.com/maxgierlachowski/ReactiveComponents
 
 #### Code
 
