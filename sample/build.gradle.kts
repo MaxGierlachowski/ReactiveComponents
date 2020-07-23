@@ -54,14 +54,13 @@ dependencies {
     // Flat layout widget
     implementation("androidx.constraintlayout:constraintlayout:${Libraries.AndroidX.constraintLayout}")
 
-    // Efficient lists
-    implementation("androidx.recyclerview:recyclerview:${Libraries.AndroidX.recyclerView}")
-
     // Concurrent coding
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Libraries.coroutinesCore}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Libraries.coroutinesCore}")
 
     // Library
+    //implementation(project(":core"))
     implementation("io.gierla.reactivecomponents:Core:0.0.12")
+    //kapt(project(":annotationprocessor"))
     kapt("io.gierla.reactivecomponents:AnnotationProcessor:0.0.12")
 }

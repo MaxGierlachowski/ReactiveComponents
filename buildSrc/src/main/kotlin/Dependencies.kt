@@ -28,7 +28,6 @@ object Libraries {
         const val appCompat = "1.1.0"
         const val coreKtx = "1.3.0"
         const val constraintLayout = "1.1.3"
-        const val recyclerView = "1.1.0"
     }
 }
 

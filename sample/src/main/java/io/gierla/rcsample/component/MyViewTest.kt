@@ -3,18 +3,15 @@ package io.gierla.rcsample.component
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.TextView
-import androidx.constraintlayout.widget.ConstraintLayout
 import io.gierla.rccore.annotations.ReactiveComponent
 import io.gierla.rccore.main.action.Action
 import io.gierla.rccore.main.state.State
-import io.gierla.rcsample.R
-import io.gierla.rccore.views.store.ReactiveView
 import io.gierla.rccore.views.view.Structure
+import io.gierla.rcsample.R
+import io.gierla.rcsample.component.utils.ReactiveConstraintLayout
 
 @ReactiveComponent
-class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) :
-    ConstraintLayout(context, attributeSet, defStyleAttr),
-    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler> by MyViewTestImpl(ViewState()) {
+class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler>(MyViewTestImpl(ViewState()), context, attributeSet, defStyleAttr) {
 
     init {
         inflate(context, R.layout.my_view, this)
@@ -31,16 +28,6 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
             }
             testView.isAllCaps = true
         }
-    }
-
-    override fun onDetachedFromWindow() {
-        detachView()
-        super.onDetachedFromWindow()
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        attachView()
     }
 
     @io.gierla.rccore.annotations.State
