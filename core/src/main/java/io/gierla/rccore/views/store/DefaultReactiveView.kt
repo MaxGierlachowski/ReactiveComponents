@@ -27,10 +27,10 @@ abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D : Sta
         storeJob = CoroutineScope(Dispatchers.Main).launch {
             store.subscribeState(object : StateSubscriber<S> {
                 override suspend fun onNext(oldState: S?, newState: S) {
-                    launch {
-                        viewStructure?.let { viewStructure ->
+                    viewStructure?.let { viewStructure ->
+                        //launch {
                             store.applyChanges(viewStructure, oldState, newState)
-                        }
+                        //}
                     }
                 }
             })
