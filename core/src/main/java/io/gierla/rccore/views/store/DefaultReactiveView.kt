@@ -29,7 +29,7 @@ abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D : Sta
                 override suspend fun onNext(oldState: S?, newState: S) {
                     launch {
                         viewStructure?.let { viewStructure ->
-                            store.applyChanges(viewStructure)
+                            store.applyChanges(viewStructure, oldState, newState)
                         }
                     }
                 }

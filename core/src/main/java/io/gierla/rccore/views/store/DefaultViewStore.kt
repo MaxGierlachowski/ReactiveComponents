@@ -22,9 +22,9 @@ class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, pr
         this.stateDispatcher = stateDispatcher
     }
 
-    override suspend fun applyChanges(view: V) = withContext(Dispatchers.Default) {
+    override suspend fun applyChanges(view: V, oldState: S?, newState: S) = withContext(Dispatchers.Default) {
         val changes = controlledRunner.cancelPreviousThenRun {
-            stateDispatcher?.calculateChanges(view, getOldState(), getState()) ?: emptyList()
+            stateDispatcher?.calculateChanges(view, oldState, newState) ?: emptyList()
         }
         // Applying state and therefore executing ui operations must be done on the main thread
         withContext(Dispatchers.Main) {
