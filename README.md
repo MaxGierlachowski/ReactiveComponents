@@ -404,4 +404,4 @@ While developing this library I tried to reduce the work the developer has to do
 
 ### About me
 
-I am a currently attending technical university vienna and I am quit new to library development and publishing. I would like to learn from you and if you have anything interessing to speak about, I would like to hear from you. 
+I am a currently attending university of technology of vienna and I am quite new to library development and publishing. I would like to learn from you and if you have anything interesing to speak about, I would like to hear from you. 
