@@ -9,9 +9,11 @@ import io.gierla.rccore.main.state.State
 import io.gierla.rccore.views.view.Structure
 import io.gierla.rcsample.R
 import io.gierla.rcsample.component.utils.ReactiveConstraintLayout
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
+@ExperimentalCoroutinesApi
 @ReactiveComponent
-class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler>(MyViewTestImpl(ViewState()), context, attributeSet, defStyleAttr) {
+class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler<MyViewTest.ViewStructure, MyViewTest.ViewState>>(MyViewTestImpl(ViewState()), context, attributeSet, defStyleAttr) {
 
     init {
         inflate(context, R.layout.my_view, this)

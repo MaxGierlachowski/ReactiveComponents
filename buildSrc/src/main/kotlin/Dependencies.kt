@@ -1,7 +1,7 @@
-const val kotlinVersion = "1.3.72"
+const val kotlinVersion = "1.4.21"
 
 object BuildPlugins {
-    const val androidGradle = "4.0.1"
+    const val androidGradle = "4.1.1"
     const val bintray = "1.8.5"
     const val dokka = "0.10.1"
 }
@@ -33,5 +33,5 @@ object Libraries {
 
 object LibConfig {
     const val groupId = "io.gierla.reactivecomponents"
-    const val version = "0.0.14"
+    const val version = "0.0.16"
 }

@@ -1,17 +1,20 @@
 package io.gierla.rcsample.component
 
 import android.graphics.Color
-import io.gierla.rccore.views.view.Variation
+import io.gierla.rccore.views.helper.variation
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
-enum class MyViewTestVariation : Variation<MyViewTest.ViewStructure, MyViewTestStateHandler> {
-    MAIN {
-        override fun init(view: MyViewTest.ViewStructure) {
+@ExperimentalCoroutinesApi
+object MyViewTestVariations {
+    val MAIN = variation<MyViewTest.ViewStructure, MyViewTestStateHandler<MyViewTest.ViewStructure, MyViewTest.ViewState>> {
+        init { view ->
             view.testView.setTextColor(Color.MAGENTA)
         }
-
-        override fun getStateHandler(): MyViewTestStateHandler = object : MyViewTestStateHandler {
-            override fun drawText(view: MyViewTest.ViewStructure, state: MyViewTest.ViewState) {
-                view.testView.text = state.text.capitalize()
+        stateHandler {
+            myViewTestStateHandler {
+                drawText { view, state ->
+                    view.testView.text = state.text.capitalize()
+                }
             }
         }
     }
