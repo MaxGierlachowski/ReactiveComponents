@@ -13,7 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
 @ReactiveComponent
-class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler<MyViewTest.ViewStructure, MyViewTest.ViewState>>(MyViewTestImpl(ViewState()), context, attributeSet, defStyleAttr) {
+class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler>(MyViewTestImpl(ViewState()), context, attributeSet, defStyleAttr) {
 
     init {
         inflate(context, R.layout.my_view, this)

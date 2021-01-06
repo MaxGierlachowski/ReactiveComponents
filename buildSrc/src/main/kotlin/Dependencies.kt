@@ -33,5 +33,5 @@ object Libraries {
 
 object LibConfig {
     const val groupId = "io.gierla.reactivecomponents"
-    const val version = "0.0.16"
+    const val version = "0.0.17"
 }

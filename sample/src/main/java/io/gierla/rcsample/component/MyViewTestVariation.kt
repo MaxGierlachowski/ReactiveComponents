@@ -6,7 +6,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
 object MyViewTestVariations {
-    val MAIN = variation<MyViewTest.ViewStructure, MyViewTestStateHandler<MyViewTest.ViewStructure, MyViewTest.ViewState>> {
+    val MAIN = variation<MyViewTest.ViewStructure, MyViewTestStateHandler> {
         init { view ->
             view.testView.setTextColor(Color.MAGENTA)
         }

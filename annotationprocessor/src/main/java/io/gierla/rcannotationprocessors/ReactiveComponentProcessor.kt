@@ -181,10 +181,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
         val ViewActionType = ClassName(packageName, actionElement.qualifiedName.toString())
 
-        val ViewStateHandlerType = ClassName(packageName, viewStateHandlerName).parameterizedBy(
-            ViewStructureType,
-            ViewStateType
-        )
+        val ViewStateHandlerType = ClassName(packageName, viewStateHandlerName)
         val ViewStateDisptacherType = ClassName(packageName, viewStateDispatcherName)
 
         val DefaultReactiveViewType = DefaultReactiveView::class.asTypeName()
@@ -290,10 +287,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
 
         val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
-        val ViewStateHandlerType = ClassName(packageName, viewStateHandlerName).parameterizedBy(
-            ViewStructureType,
-            ViewStateType
-        )
+        val ViewStateHandlerType = ClassName(packageName, viewStateHandlerName)
 
         val StateDispatcherType = StateDispatcher::class.asTypeName()
 
@@ -306,15 +300,9 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             returnType = Unit::class.asTypeName()
         )
 
-        val GenericViewStructureType =
-            TypeVariableName.invoke("V", io.gierla.rccore.views.view.Structure::class.asTypeName())
-        val GenerivViewStateType =
-            TypeVariableName.invoke("S", io.gierla.rccore.main.state.State::class.asTypeName())
-
         val viewStateHandlerTypeSpecBuilder = TypeSpec.interfaceBuilder(viewStateHandlerName)
             .addSuperinterface(StateHandler::class.asTypeName())
-            .addTypeVariable(GenericViewStructureType)
-            .addTypeVariable(GenerivViewStateType)
+        viewStateHandlerTypeSpecBuilder.addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
 
         /* StateHandler Builder */
 
@@ -322,8 +310,6 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
         val viewStateHandlerBuilderTypeSpecBuilder = TypeSpec.classBuilder(viewStateHandlerName + "Builder")
         viewStateHandlerBuilderTypeSpecBuilder.addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
-        viewStateHandlerBuilderTypeSpecBuilder.addTypeVariable(GenericViewStructureType)
-        viewStateHandlerBuilderTypeSpecBuilder.addTypeVariable(GenerivViewStateType)
 
         /* StateHandler Builder End */
 
@@ -374,7 +360,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             .addStatement("val changes = mutableListOf<() -> Unit>()")
 
         val viewStateHandlerBuilderObj = TypeSpec.anonymousClassBuilder()
-            .addSuperinterface(ClassName(packageName, viewStateHandlerName).parameterizedBy(GenericViewStructureType, GenerivViewStateType))
+            .addSuperinterface(ClassName(packageName, viewStateHandlerName))
 
         stateElement.enclosedElements
             .filter { it.kind == ElementKind.FIELD }
@@ -384,15 +370,15 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
                 viewStateHandlerTypeSpecBuilder.addFunction(
                     FunSpec.builder(actionName)
-                        .addParameter("view", GenericViewStructureType)
-                        .addParameter("state", GenerivViewStateType)
+                        .addParameter("view", ViewStructureType)
+                        .addParameter("state", ViewStateType)
                         .build()
                 )
 
                 val PropFuncType = LambdaTypeName.get(
                     parameters = listOf(
-                        ParameterSpec("view", GenericViewStructureType),
-                        ParameterSpec("state", GenerivViewStateType)
+                        ParameterSpec("view", ViewStructureType),
+                        ParameterSpec("state", ViewStateType)
                     ),
                     returnType = Unit::class.asTypeName()
                 )
@@ -417,8 +403,8 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 viewStateHandlerBuilderObj.addFunction(
                     FunSpec.builder(actionName)
                         .addModifiers(KModifier.OVERRIDE)
-                        .addParameter("view", GenericViewStructureType)
-                        .addParameter("state", GenerivViewStateType)
+                        .addParameter("view", ViewStructureType)
+                        .addParameter("state", ViewStateType)
                         .addStatement("$propFuncName(view, state)")
                         .build()
                 )
@@ -439,7 +425,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
         viewStateHandlerBuilderTypeSpecBuilder.addFunction(
             FunSpec.builder("build")
-                .returns(ClassName(packageName, viewStateHandlerName).parameterizedBy(GenericViewStructureType, GenerivViewStateType))
+                .returns(ClassName(packageName, viewStateHandlerName))
                 .addStatement("return %L", viewStateHandlerBuilderObj.build())
                 .build()
         )
@@ -456,7 +442,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
         val StateHandlerBuilderCallbackType = LambdaTypeName.get(
             parameters = listOf(),
             returnType = Unit::class.asTypeName(),
-            receiver = StateHandlerBuilderType.parameterizedBy(GenericViewStructureType, GenerivViewStateType)
+            receiver = StateHandlerBuilderType
         )
 
         val viewStateHandlerBuilderFile = FileSpec.builder(packageName, viewStateHandlerName + "Builder")
@@ -464,14 +450,12 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             .addFunction(
                 FunSpec.builder(viewStateHandlerName.decapitalize())
                     .addAnnotation(ExperimentalCoroutinesApiAnnotation)
-                    .addTypeVariable(GenericViewStructureType)
-                    .addTypeVariable(GenerivViewStateType)
                     .addParameter(
                         ParameterSpec.builder("initializer", StateHandlerBuilderCallbackType)
                             .build()
                     )
-                    .returns(ClassName(packageName, viewStateHandlerName).parameterizedBy(GenericViewStructureType, GenerivViewStateType))
-                    .addStatement("return %T().apply(initializer).build()", StateHandlerBuilderType.parameterizedBy(GenericViewStructureType, GenerivViewStateType))
+                    .returns(ClassName(packageName, viewStateHandlerName))
+                    .addStatement("return %T().apply(initializer).build()", StateHandlerBuilderType)
                     .build()
             )
             .build()
