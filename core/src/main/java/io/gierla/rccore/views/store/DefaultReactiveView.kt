@@ -3,16 +3,17 @@ package io.gierla.rccore.views.store
 import io.gierla.rccore.main.action.Action
 import io.gierla.rccore.main.action.ActionListener
 import io.gierla.rccore.main.state.State
-import io.gierla.rccore.main.state.StateHandler
 import io.gierla.rccore.main.state.StateSubscriber
+import io.gierla.rccore.views.helper.VariationBuilder
 import io.gierla.rccore.views.view.StateDispatcher
 import io.gierla.rccore.views.view.Structure
+import io.gierla.rccore.views.view.Variation
 import kotlinx.coroutines.*
 
 @ExperimentalCoroutinesApi
-abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D : StateHandler>(initialState: S) : ReactiveView<S, A, V, D> {
+class DefaultReactiveView<S : State, A : Action, V : Structure>(initialState: S) : ReactiveView<S, A, V> {
 
-    private val store: ViewStore<S, A, V> = DefaultViewStore(initialState = initialState)
+    private val store: ViewStore<S, A, V> = DefaultViewStore(initialState)
 
     private var storeJob: Job? = null
 
@@ -28,9 +29,7 @@ abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D : Sta
             store.subscribeState(object : StateSubscriber<S> {
                 override suspend fun onNext(oldState: S?, newState: S) {
                     viewStructure?.let { viewStructure ->
-                        //launch {
-                            store.applyChanges(viewStructure, oldState, newState)
-                        //}
+                        store.applyChanges(viewStructure, oldState, newState)
                     }
                 }
             })
@@ -51,6 +50,17 @@ abstract class DefaultReactiveView<S : State, A : Action, V : Structure, D : Sta
         this.viewStructureGetter = viewStructureGetter
         this.viewStructure = viewStructureGetter?.invoke()
         this.store.notifyState()
+    }
+
+    override fun setVariation(callback: ((view: V, oldState: S?, newState: S) -> Unit)?, variation: Variation<V, S>) {
+        getViewStructure()?.let { variation.init(it) }
+        setStateDispatcher(variation.getStateDispatcher())
+    }
+
+    override fun setVariation(callback: ((view: V, oldState: S?, newState: S) -> Unit)?, variationBuilder: VariationBuilder<V, S>.() -> Unit) {
+        val variation = VariationBuilder<V, S>().apply(variationBuilder).build()
+        getViewStructure()?.let { variation.init(it) }
+        setStateDispatcher(variation.getStateDispatcher())
     }
 
     override fun updateState(stateCallback: (S) -> S) = store.updateState(stateCallback)
