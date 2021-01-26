@@ -21,15 +21,20 @@ class DefaultReactiveView<S : State, A : Action, V : Structure>(initialState: S)
 
     private var viewStructure: V? = null
 
+    private var changesJob: Job? = null
+
     override fun attachView() {
         if (this.viewStructure == null) {
             this.viewStructure = this.viewStructureGetter?.invoke()
         }
-        storeJob = CoroutineScope(Dispatchers.Main).launch {
+        storeJob = CoroutineScope(Dispatchers.Default).launch {
             store.subscribeState(object : StateSubscriber<S> {
                 override suspend fun onNext(oldState: S?, newState: S) {
-                    viewStructure?.let { viewStructure ->
-                        store.applyChanges(viewStructure, oldState, newState)
+                    changesJob?.cancelAndJoin()
+                    changesJob = launch {
+                        viewStructure?.let { viewStructure ->
+                            store.applyChanges(viewStructure, oldState, newState)
+                        }
                     }
                 }
             })
