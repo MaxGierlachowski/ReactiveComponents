@@ -5,19 +5,14 @@ import io.gierla.rccore.main.action.ActionListener
 import io.gierla.rccore.main.state.State
 import io.gierla.rccore.main.state.StateDiffPair
 import io.gierla.rccore.main.state.StateSubscriber
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.fold
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 
 @ExperimentalCoroutinesApi
 class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
+
+    private var changesJob: Job? = null
 
     // This is used because StateFlow checks for equality of objects and in some cases we want to force it to emit the same value twice (e.g. when the stateDispatcher of an reactive component is changed),
     // "forced" is not enough because we could set a new state dispatcher and a new view-structure right after each other and the view would only be notified once.
@@ -54,8 +49,11 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
 
     override suspend fun subscribeState(subscriber: StateSubscriber<S>) = withContext(Dispatchers.Default) {
         stateSubscribers.collect {
-            subscriber.onNext(if (it.forced) null else oldState, it.newState)
-            oldState = it.newState
+            changesJob?.cancelAndJoin()
+            changesJob = launch {
+                subscriber.onNext(if (it.forced) null else oldState, it.newState)
+                oldState = it.newState
+            }
         }
     }
 
