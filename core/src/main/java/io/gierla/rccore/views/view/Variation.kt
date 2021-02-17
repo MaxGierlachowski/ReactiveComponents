@@ -1,8 +1,8 @@
 package io.gierla.rccore.views.view
 
-import io.gierla.rccore.main.state.StateHandler
+import io.gierla.rccore.main.state.State
 
-interface Variation<V: Structure, D: StateHandler> {
+interface Variation<V: Structure, S: State> {
     fun init(view: V) {}
-    fun getStateHandler(): D
+    fun getStateDispatcher(): StateDispatcher<S, V>
 }

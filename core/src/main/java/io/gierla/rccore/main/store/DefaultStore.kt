@@ -5,16 +5,9 @@ import io.gierla.rccore.main.action.ActionListener
 import io.gierla.rccore.main.state.State
 import io.gierla.rccore.main.state.StateDiffPair
 import io.gierla.rccore.main.state.StateSubscriber
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.fold
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 
 @ExperimentalCoroutinesApi
 class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
@@ -23,16 +16,11 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
     // "forced" is not enough because we could set a new state dispatcher and a new view-structure right after each other and the view would only be notified once.
     private var updateBool = false
 
-    private val stateSubscribers = MutableStateFlow(StateDiffPair(initialState, updateBool, false))
+    private val stateSubscribers = MutableStateFlow(StateDiffPair(initialState, updateBool))
 
     private var actionListener: ActionListener<A>? = null
 
-    private var oldState: S? = null
     private var state: S = initialState
-
-    override fun getOldState(): S? {
-        return oldState
-    }
 
     override fun getState(): S {
         return state
@@ -40,12 +28,12 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
 
     override fun updateState(stateCallback: (S) -> S) {
         state = stateCallback.invoke(state)
-        stateSubscribers.value = StateDiffPair(newState = state, updateBool = updateBool, forced = false)
+        stateSubscribers.value = StateDiffPair(state = state, updateBool = updateBool)
     }
 
     override fun notifyState() {
         updateBool = !updateBool
-        stateSubscribers.value = StateDiffPair(newState = state, updateBool = updateBool, forced = true)
+        stateSubscribers.value = StateDiffPair(state = state, updateBool = updateBool)
     }
 
     override fun dispatchAction(action: A) {
@@ -54,8 +42,7 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
 
     override suspend fun subscribeState(subscriber: StateSubscriber<S>) = withContext(Dispatchers.Default) {
         stateSubscribers.collect {
-            subscriber.onNext(if (it.forced) null else oldState, it.newState)
-            oldState = it.newState
+            subscriber.onNext(it.state)
         }
     }
 

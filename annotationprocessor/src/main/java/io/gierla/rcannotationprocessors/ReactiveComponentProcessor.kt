@@ -8,11 +8,11 @@ import io.gierla.rccore.annotations.ReactiveComponent
 import io.gierla.rccore.annotations.State
 import io.gierla.rccore.annotations.Structure
 import io.gierla.rccore.main.state.StateHandler
-import io.gierla.rccore.views.helper.VariationBuilder
-import io.gierla.rccore.views.store.DefaultReactiveView
 import io.gierla.rccore.views.view.StateDispatcher
 import io.gierla.rccore.views.view.Variation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
@@ -28,6 +28,10 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
+
+        private val ExperimentalCoroutinesApiAnnotation = ClassName("kotlinx.coroutines", "ExperimentalCoroutinesApi")
+        private val StateDispatcherType = StateDispatcher::class.asTypeName()
+        private val VariationType = Variation::class.asTypeName()
     }
 
     private var messager: Messager? = null
@@ -134,18 +138,13 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 stateElement?.let { mStateElement ->
                     actionElement?.let { mActionElement ->
                         createStateClasses(
-                            packageName,
-                            mStateElement,
-                            mStructureElement,
-                            viewStateDispatcherName,
-                            viewStateHandlerName
-                        )
-                        createViewClasses(
-                            packageName,
-                            viewName,
-                            stateElement,
-                            structureElement,
-                            mActionElement,
+                            TargetInfo(
+                                packageName,
+                                viewName,
+                                mStateElement,
+                                mActionElement,
+                                mStructureElement,
+                            ),
                             viewStateDispatcherName,
                             viewStateHandlerName
                         )
@@ -164,229 +163,175 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
     }
 
-    private val ExperimentalCoroutinesApiAnnotation =
-        ClassName("kotlinx.coroutines", "ExperimentalCoroutinesApi")
-
-    private fun createViewClasses(
-        packageName: String,
-        viewName: String,
-        stateElement: TypeElement,
-        structureElement: TypeElement,
-        actionElement: TypeElement,
+    private fun createStateClasses(
+        targetInfo: TargetInfo,
         viewStateDispatcherName: String,
         viewStateHandlerName: String
     ) {
 
-        val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
-        val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
-        val ViewActionType = ClassName(packageName, actionElement.qualifiedName.toString())
+        createStateHandler(targetInfo, viewStateHandlerName)
 
-        val ViewStateHandlerType = ClassName(packageName, viewStateHandlerName)
-        val ViewStateDisptacherType = ClassName(packageName, viewStateDispatcherName)
+        val viewStateHandlerType = ClassName(targetInfo.packageName, viewStateHandlerName)
 
-        val DefaultReactiveViewType = DefaultReactiveView::class.asTypeName()
+        createStateDispatcher(targetInfo, viewStateDispatcherName, viewStateHandlerType)
 
-        val viewTypeSpecBuilder = TypeSpec.classBuilder(viewName + "Impl")
-        viewTypeSpecBuilder.addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
+        val viewStateDispatcherType = ClassName(targetInfo.packageName, viewStateDispatcherName)
 
-        viewTypeSpecBuilder.superclass(
-            DefaultReactiveViewType.parameterizedBy(
-                ViewStateType,
-                ViewActionType,
-                ViewStructureType,
-                ViewStateHandlerType
-            )
-        )
-        viewTypeSpecBuilder.addSuperclassConstructorParameter(CodeBlock.of("initialState"))
+        createStateHandlerBuilder(targetInfo, viewStateHandlerName + "Builder", viewStateHandlerType)
 
-        val constructorBuilder = FunSpec.constructorBuilder()
-        constructorBuilder.addParameter(
-            ParameterSpec.builder("initialState", ViewStateType).build()
-        )
-        viewTypeSpecBuilder.primaryConstructor(constructorBuilder.build())
+        val stateHandlerBuilderType = ClassName(targetInfo.packageName, viewStateHandlerName + "Builder")
 
-        val VariationCallbackType = LambdaTypeName.get(
-            parameters = listOf(
-                ParameterSpec("view", ViewStructureType),
-                ParameterSpec("oldState", ViewStateType.copy(nullable = true)),
-                ParameterSpec("newState", ViewStateType)
-            ),
-            returnType = Unit::class.asTypeName()
-        )
-
-        val VariationBuilderCallbackType = LambdaTypeName.get(
-            parameters = listOf(),
-            returnType = Unit::class.asTypeName(),
-            receiver = VariationBuilder::class.asTypeName()
-                .parameterizedBy(ViewStructureType, ViewStateHandlerType)
-        )
-
-        viewTypeSpecBuilder.addFunction(
-            FunSpec
-                .builder("setVariation")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter(
-                    ParameterSpec.builder(
-                        "callback",
-                        VariationCallbackType.copy(nullable = true)
-                    ).build()
-                )
-                .addParameter(
-                    "variation",
-                    Variation::class.asTypeName()
-                        .parameterizedBy(ViewStructureType, ViewStateHandlerType)
-                )
-                .addStatement("getViewStructure()?.let { variation.init(it) }")
-                .addStatement(
-                    "setStateDispatcher(%T(variation.getStateHandler(), callback))",
-                    ViewStateDisptacherType
-                )
-                .build()
-        )
-
-        viewTypeSpecBuilder.addFunction(
-            FunSpec
-                .builder("setVariation")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter(
-                    ParameterSpec.builder(
-                        "callback",
-                        VariationCallbackType.copy(nullable = true)
-                    ).build()
-                )
-                .addParameter("variationBuilder", VariationBuilderCallbackType)
-                .addStatement(
-                    "val variation = %T().apply(variationBuilder).build()",
-                    VariationBuilder::class.asTypeName()
-                        .parameterizedBy(ViewStructureType, ViewStateHandlerType)
-                )
-                .addStatement("getViewStructure()?.let { variation.init(it) }")
-                .addStatement(
-                    "setStateDispatcher(%T(variation.getStateHandler(), callback))",
-                    ViewStateDisptacherType
-                )
-                .build()
-        )
-
-        val viewFile =
-            FileSpec.builder(packageName, viewName + "Impl").addType(viewTypeSpecBuilder.build())
-                .build()
-
-        filer?.let { viewFile.writeTo(it) }
-
+        createVariationBuilder(targetInfo, targetInfo.viewName + "VariationBuilder", viewStateHandlerType, viewStateDispatcherType, stateHandlerBuilderType)
     }
 
-    private fun createStateClasses(
-        packageName: String,
-        stateElement: TypeElement,
-        structureElement: TypeElement,
-        viewStateDispatcherName: String,
-        viewStateHandlerName: String
-    ) {
+    private fun createVariationBuilder(target: TargetInfo, name: String, stateHandlerType: ClassName, stateDispatcherType: ClassName, stateHandlerBuilderType: ClassName) {
+        val variationBuilderType = ClassName(target.packageName, name)
 
-        val ViewStructureType = ClassName(packageName, structureElement.qualifiedName.toString())
+        val variationBuilderTypeSpecBuilder = TypeSpec.classBuilder(name)
+            .addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
 
-        val ViewStateType = ClassName(packageName, stateElement.qualifiedName.toString())
-        val ViewStateHandlerType = ClassName(packageName, viewStateHandlerName)
+        val stateHandlerBuilderCallbackType = LambdaTypeName.get(
+            parameters = listOf(),
+            returnType = Unit::class.asTypeName(),
+            receiver = stateHandlerBuilderType
+        )
 
-        val StateDispatcherType = StateDispatcher::class.asTypeName()
+        // Builder functions
 
-        val DispatchCallbackType = LambdaTypeName.get(
+        val initFuncType = LambdaTypeName.get(
+            parameters = listOf(ParameterSpec("view", target.viewStructureType)),
+            returnType = Unit::class.asTypeName()
+        )
+        val initFuncName = "initFunc"
+
+        variationBuilderTypeSpecBuilder.addProperty(
+            PropertySpec.builder(initFuncName, initFuncType)
+                .addModifiers(KModifier.PRIVATE)
+                .mutable()
+                .initializer("{}")
+                .build()
+        )
+
+        variationBuilderTypeSpecBuilder.addFunction(
+            FunSpec.builder("init")
+                .addParameter(initFuncName, initFuncType)
+                .addStatement("this.$initFuncName = $initFuncName")
+                .build()
+        )
+
+        val dispatchFuncType = LambdaTypeName.get(
             parameters = listOf(
-                ParameterSpec("view", ViewStructureType),
-                ParameterSpec("oldState", ViewStateType.copy(nullable = true)),
-                ParameterSpec("newState", ViewStateType)
+                ParameterSpec("view", target.viewStructureType),
+                ParameterSpec("oldState", target.viewStateType.copy(nullable = true)),
+                ParameterSpec("newState", target.viewStateType)
             ),
             returnType = Unit::class.asTypeName()
         )
+        val dispatchFuncName = "dispatchCallback"
 
-        val viewStateHandlerTypeSpecBuilder = TypeSpec.interfaceBuilder(viewStateHandlerName)
-            .addSuperinterface(StateHandler::class.asTypeName())
-        viewStateHandlerTypeSpecBuilder.addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
-
-        /* StateHandler Builder */
-
-        val StateHandlerBuilderType = ClassName(packageName, viewStateHandlerName + "Builder")
-
-        val viewStateHandlerBuilderTypeSpecBuilder = TypeSpec.classBuilder(viewStateHandlerName + "Builder")
-        viewStateHandlerBuilderTypeSpecBuilder.addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
-
-        /* StateHandler Builder End */
-
-        val viewStateDispatcherTypeSpecBuilder = TypeSpec.classBuilder(viewStateDispatcherName)
-        viewStateDispatcherTypeSpecBuilder.primaryConstructor(
-            FunSpec.constructorBuilder()
-                .addParameter("stateHandler", ViewStateHandlerType.copy(nullable = true))
-                .addParameter("dispachtedCallback", DispatchCallbackType.copy(nullable = true))
-                .build()
-        )
-        viewStateDispatcherTypeSpecBuilder.addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
-        viewStateDispatcherTypeSpecBuilder.addSuperinterface(
-            StateDispatcherType.parameterizedBy(
-                ViewStateType,
-                ViewStructureType
-            )
-        )
-        viewStateDispatcherTypeSpecBuilder.addProperty(
-            PropertySpec.builder("stateHandler", ViewStateHandlerType.copy(nullable = true))
-                .initializer("stateHandler")
+        variationBuilderTypeSpecBuilder.addProperty(
+            PropertySpec.builder(dispatchFuncName, dispatchFuncType)
                 .addModifiers(KModifier.PRIVATE)
-                .build()
-        )
-        viewStateDispatcherTypeSpecBuilder.addProperty(
-            PropertySpec.builder("dispachtedCallback", DispatchCallbackType.copy(nullable = true))
-                .initializer("dispachtedCallback")
-                .addModifiers(KModifier.PRIVATE)
+                .mutable()
+                .initializer("{_, _, _ ->}")
                 .build()
         )
 
-        val CallbackListType = List::class.asTypeName()
-            .parameterizedBy(
-                LambdaTypeName.get(
-                    parameters = listOf(),
-                    returnType = Unit::class.asTypeName()
-                )
-            )
+        variationBuilderTypeSpecBuilder.addFunction(
+            FunSpec.builder(dispatchFuncName)
+                .addParameter(dispatchFuncName, dispatchFuncType)
+                .addStatement("this.$dispatchFuncName = $dispatchFuncName")
+                .build()
+        )
 
-        val viewStateDispatcherFunSpecBuilder = FunSpec.builder("calculateChanges")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.SUSPEND)
-            .addParameter("view", ViewStructureType)
-            .addParameter("oldState", ViewStateType.copy(nullable = true))
-            .addParameter("newState", ViewStateType)
-            .returns(CallbackListType)
+        val stateHandlerName = "stateHandler"
 
-        viewStateDispatcherFunSpecBuilder
-            .addStatement("val changes = mutableListOf<() -> Unit>()")
+        variationBuilderTypeSpecBuilder.addProperty(
+            PropertySpec.builder(stateHandlerName, stateHandlerType)
+                .addModifiers(KModifier.PRIVATE, KModifier.LATEINIT)
+                .mutable()
+                .build()
+        )
 
-        val viewStateHandlerBuilderObj = TypeSpec.anonymousClassBuilder()
-            .addSuperinterface(ClassName(packageName, viewStateHandlerName))
+        variationBuilderTypeSpecBuilder.addFunction(
+            FunSpec.builder(stateHandlerName)
+                .addParameter("initializer", stateHandlerBuilderCallbackType)
+                .addStatement("this.$stateHandlerName = %T().apply(initializer).build()", stateHandlerBuilderType)
+                .build()
+        )
 
-        stateElement.enclosedElements
+        // Build function
+
+        val variationBuilderObj = TypeSpec.anonymousClassBuilder()
+            .addSuperinterface(VariationType.parameterizedBy(target.viewStructureType, target.viewStateType))
+
+        variationBuilderObj.addFunction(
+            FunSpec.builder("init")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("view", target.viewStructureType)
+                .addStatement("initFunc(view)")
+                .build()
+        )
+
+        variationBuilderObj.addFunction(
+            FunSpec.builder("getStateDispatcher")
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(StateDispatcherType.parameterizedBy(target.viewStateType, target.viewStructureType))
+                .addStatement("return %T(stateHandler, dispatchCallback)", stateDispatcherType)
+                .build()
+        )
+
+        variationBuilderTypeSpecBuilder.addFunction(
+            FunSpec.builder("build")
+                .returns(VariationType.parameterizedBy(target.viewStructureType, target.viewStateType))
+                .addStatement("return %L", variationBuilderObj.build())
+                .build()
+        )
+
+        val variationBuilderCallbackType = LambdaTypeName.get(
+            parameters = listOf(),
+            returnType = Unit::class.asTypeName(),
+            receiver = variationBuilderType
+        )
+
+        val builderFunction = FunSpec.builder(target.viewName.decapitalize() + "Variation")
+            .addAnnotation(ExperimentalCoroutinesApiAnnotation)
+            .addParameter("initializer", variationBuilderCallbackType)
+            .returns(VariationType.parameterizedBy(target.viewStructureType, target.viewStateType))
+            .addStatement("return %T().apply(initializer).build()", variationBuilderType)
+            .build()
+
+        val variationBuilderFile = FileSpec.builder(target.packageName, name).addType(variationBuilderTypeSpecBuilder.build()).addFunction(builderFunction).build()
+        filer?.let { variationBuilderFile.writeTo(it) }
+    }
+
+    private fun createStateHandlerBuilder(target: TargetInfo, name: String, stateHandlerType: ClassName) {
+
+        val stateHandlerBuilderType = ClassName(target.packageName, name)
+
+        val viewStateHandlerBuilderTypeSpecBuilder = TypeSpec.classBuilder(name)
+            .addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
+
+        val viewStateHandlerBuilderObj = TypeSpec.anonymousClassBuilder().addSuperinterface(stateHandlerType)
+
+        target.viewStateElement.enclosedElements
             .filter { it.kind == ElementKind.FIELD }
             .forEach { variableType ->
 
                 val actionName = "draw${variableType.toString().capitalize()}"
 
-                viewStateHandlerTypeSpecBuilder.addFunction(
-                    FunSpec.builder(actionName)
-                        .addParameter("view", ViewStructureType)
-                        .addParameter("state", ViewStateType)
-                        .build()
-                )
-
-                val PropFuncType = LambdaTypeName.get(
+                val localFuncType = LambdaTypeName.get(
                     parameters = listOf(
-                        ParameterSpec("view", ViewStructureType),
-                        ParameterSpec("state", ViewStateType)
+                        ParameterSpec("view", target.viewStructureType),
+                        ParameterSpec("state", target.viewStateType)
                     ),
                     returnType = Unit::class.asTypeName()
                 )
 
-                val propFuncName = actionName + "Func"
+                val localFuncName = actionName + "Func"
 
                 viewStateHandlerBuilderTypeSpecBuilder.addProperty(
-                    PropertySpec.builder(propFuncName, PropFuncType)
+                    PropertySpec.builder(localFuncName, localFuncType)
                         .addModifiers(KModifier.PRIVATE)
                         .mutable()
                         .initializer("{_, _ ->}")
@@ -395,79 +340,158 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
                 viewStateHandlerBuilderTypeSpecBuilder.addFunction(
                     FunSpec.builder(actionName)
-                        .addParameter(propFuncName, PropFuncType)
-                        .addStatement("this.$propFuncName = $propFuncName")
+                        .addParameter(localFuncName, localFuncType)
+                        .addStatement("this.$localFuncName = $localFuncName")
                         .build()
                 )
 
                 viewStateHandlerBuilderObj.addFunction(
                     FunSpec.builder(actionName)
                         .addModifiers(KModifier.OVERRIDE)
-                        .addParameter("view", ViewStructureType)
-                        .addParameter("state", ViewStateType)
-                        .addStatement("$propFuncName(view, state)")
+                        .addParameter("view", target.viewStructureType)
+                        .addParameter("state", target.viewStateType)
+                        .addStatement("$localFuncName(view, state)")
                         .build()
                 )
-
-                viewStateDispatcherFunSpecBuilder
-                    .beginControlFlow(
-                        "if (oldState == null || oldState.%N != newState.%N)",
-                        variableType.toString(),
-                        variableType.toString()
-                    )
-                    .addStatement(
-                        "changes.add({ stateHandler?.%N(view, newState) })",
-                        actionName
-                    )
-                    .endControlFlow()
 
             }
 
         viewStateHandlerBuilderTypeSpecBuilder.addFunction(
             FunSpec.builder("build")
-                .returns(ClassName(packageName, viewStateHandlerName))
+                .returns(stateHandlerType)
                 .addStatement("return %L", viewStateHandlerBuilderObj.build())
                 .build()
         )
 
-        viewStateDispatcherFunSpecBuilder
-            .addStatement("dispachtedCallback?.invoke(view, oldState, newState)")
-
-        viewStateDispatcherFunSpecBuilder
-            .addStatement("return changes")
-
-        val viewStateDispatcherFunSpec = viewStateDispatcherFunSpecBuilder.build()
-        viewStateDispatcherTypeSpecBuilder.addFunction(viewStateDispatcherFunSpec)
-
-        val StateHandlerBuilderCallbackType = LambdaTypeName.get(
+        val stateHandlerBuilderCallbackType = LambdaTypeName.get(
             parameters = listOf(),
             returnType = Unit::class.asTypeName(),
-            receiver = StateHandlerBuilderType
+            receiver = stateHandlerBuilderType
         )
 
-        val viewStateHandlerBuilderFile = FileSpec.builder(packageName, viewStateHandlerName + "Builder")
-            .addType(viewStateHandlerBuilderTypeSpecBuilder.build())
-            .addFunction(
-                FunSpec.builder(viewStateHandlerName.decapitalize())
-                    .addAnnotation(ExperimentalCoroutinesApiAnnotation)
-                    .addParameter(
-                        ParameterSpec.builder("initializer", StateHandlerBuilderCallbackType)
-                            .build()
+        val builderFunction = FunSpec.builder(stateHandlerType.simpleName.decapitalize())
+            .addAnnotation(ExperimentalCoroutinesApiAnnotation)
+            .addParameter(ParameterSpec.builder("initializer", stateHandlerBuilderCallbackType).build())
+            .returns(stateHandlerType)
+            .addStatement("return %T().apply(initializer).build()", stateHandlerBuilderType)
+            .build()
+
+        val viewStateHandlerBuilderFile = FileSpec.builder(target.packageName, name).addType(viewStateHandlerBuilderTypeSpecBuilder.build()).addFunction(builderFunction).build()
+        filer?.let { viewStateHandlerBuilderFile.writeTo(it) }
+    }
+
+    private fun createStateDispatcher(target: TargetInfo, name: String, stateHandlerType: ClassName) {
+        val dispatchCallbackType = LambdaTypeName.get(
+            parameters = listOf(
+                ParameterSpec("view", target.viewStructureType),
+                ParameterSpec("oldState", target.viewStateType.copy(nullable = true)),
+                ParameterSpec("newState", target.viewStateType)
+            ),
+            returnType = Unit::class.asTypeName()
+        )
+
+        val dispatchersType = Dispatchers::class.asTypeName()
+
+        val viewStateDispatcherFunSpecBuilder = FunSpec.builder("dispatchChanges")
+            .addModifiers(KModifier.OVERRIDE)
+            .addModifiers(KModifier.SUSPEND)
+            .addParameter("view", target.viewStructureType)
+            .addParameter("state", target.viewStateType)
+
+        target.viewStateElement.enclosedElements
+            .filter { it.kind == ElementKind.FIELD }
+            .forEach { variableType ->
+
+                val actionName = "draw${variableType.toString().capitalize()}"
+                viewStateDispatcherFunSpecBuilder
+                    .beginControlFlow(
+                        "if (oldState == null || oldState?.%N != state.%N)",
+                        variableType.toString(),
+                        variableType.toString()
                     )
-                    .returns(ClassName(packageName, viewStateHandlerName))
-                    .addStatement("return %T().apply(initializer).build()", StateHandlerBuilderType)
+                    .beginControlFlow(
+                        "withContext(%T.Main) {",
+                        dispatchersType
+                    )
+                    .addStatement(
+                        "stateHandler?.%N(view, state)",
+                        actionName
+                    )
+                    .endControlFlow()
+                    .endControlFlow()
+            }
+
+        viewStateDispatcherFunSpecBuilder
+            .addStatement("dispatchedCallback?.invoke(view, oldState, state)")
+            .addStatement("oldState = state")
+
+        val viewStateDispatcherTypeSpecBuilder = TypeSpec.classBuilder(name)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter("stateHandler", stateHandlerType.copy(nullable = true))
+                    .addParameter(ParameterSpec.builder("dispatchedCallback", dispatchCallbackType.copy(nullable = true)).defaultValue("null").build())
                     .build()
             )
-            .build()
-        val viewStateHandlerFile = FileSpec.builder(packageName, viewStateHandlerName)
-            .addType(viewStateHandlerTypeSpecBuilder.build()).build()
-        val viewStateDispatcherFile = FileSpec.builder(packageName, viewStateDispatcherName)
-            .addType(viewStateDispatcherTypeSpecBuilder.build()).build()
+            .superclass(
+                StateDispatcherType.parameterizedBy(
+                    target.viewStateType,
+                    target.viewStructureType
+                )
+            )
+            .addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
+            .addProperty(
+                PropertySpec.builder("stateHandler", stateHandlerType.copy(nullable = true))
+                    .initializer("stateHandler")
+                    .addModifiers(KModifier.PRIVATE)
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("dispatchedCallback", dispatchCallbackType.copy(nullable = true))
+                    .initializer("dispatchedCallback")
+                    .addModifiers(KModifier.PRIVATE)
+                    .build()
+            )
+            .addFunction(viewStateDispatcherFunSpecBuilder.build())
 
-        filer?.let { viewStateHandlerBuilderFile.writeTo(it) }
-        filer?.let { viewStateHandlerFile.writeTo(it) }
+        val viewStateDispatcherFile = FileSpec.builder(target.packageName, name).addType(viewStateDispatcherTypeSpecBuilder.build()).addImport("kotlinx.coroutines", "withContext").build()
         filer?.let { viewStateDispatcherFile.writeTo(it) }
+    }
 
+    private fun createStateHandler(target: TargetInfo, name: String) {
+        val viewStateHandlerTypeSpecBuilder = TypeSpec.interfaceBuilder(name)
+            .addSuperinterface(StateHandler::class.asTypeName())
+            .addAnnotation(annotation = ExperimentalCoroutinesApiAnnotation)
+
+        target.viewStateElement.enclosedElements
+            .filter { it.kind == ElementKind.FIELD }
+            .forEach { variableType ->
+
+                val actionName = "draw${variableType.toString().capitalize()}"
+
+                viewStateHandlerTypeSpecBuilder.addFunction(
+                    FunSpec.builder(actionName)
+                        .addParameter("view", target.viewStructureType)
+                        .addParameter("state", target.viewStateType)
+                        .build()
+                )
+
+            }
+
+        val viewStateHandlerFile = FileSpec.builder(target.packageName, name).addType(viewStateHandlerTypeSpecBuilder.build()).build()
+        filer?.let { viewStateHandlerFile.writeTo(it) }
+    }
+
+    private data class TargetInfo(
+        val packageName: String,
+        val viewName: String,
+
+        val viewStateElement: TypeElement,
+        val viewActionElement: TypeElement,
+        val viewStructureElement: TypeElement
+    ) {
+        val viewStateType = ClassName(packageName, viewStateElement.qualifiedName.toString())
+        val viewActionType = ClassName(packageName, viewActionElement.qualifiedName.toString())
+        val viewStructureType = ClassName(packageName, viewStructureElement.qualifiedName.toString())
     }
 
     private fun isNotAbstract(type: TypeElement, annotationName: String): Boolean {
