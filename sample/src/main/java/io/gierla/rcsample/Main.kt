@@ -29,7 +29,7 @@ class Main : AppCompatActivity() {
         GlobalScope.launch {
             delay(5000)
             for(i in 0..1000) {
-                delay(0)
+                delay(1)
                 myView.updateState { currentState ->
                     currentState.copy(
                         text = "Text $i"

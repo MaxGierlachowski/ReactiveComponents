@@ -1,5 +1,5 @@
 package io.gierla.rccore.main.state
 
 interface StateSubscriber<S: State> {
-    suspend fun onNext(oldState: S?, newState: S)
+    suspend fun onNext(state: S)
 }

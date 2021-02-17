@@ -10,7 +10,9 @@ import io.gierla.rccore.annotations.Structure
 import io.gierla.rccore.main.state.StateHandler
 import io.gierla.rccore.views.view.StateDispatcher
 import io.gierla.rccore.views.view.Variation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
@@ -388,23 +390,13 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             returnType = Unit::class.asTypeName()
         )
 
-        val callbackListType = List::class.asTypeName()
-            .parameterizedBy(
-                LambdaTypeName.get(
-                    parameters = listOf(),
-                    returnType = Unit::class.asTypeName()
-                )
-            )
+        val dispatchersType = Dispatchers::class.asTypeName()
 
-        val viewStateDispatcherFunSpecBuilder = FunSpec.builder("calculateChanges")
+        val viewStateDispatcherFunSpecBuilder = FunSpec.builder("dispatchChanges")
             .addModifiers(KModifier.OVERRIDE)
             .addModifiers(KModifier.SUSPEND)
             .addParameter("view", target.viewStructureType)
-            .addParameter("oldState", target.viewStateType.copy(nullable = true))
-            .addParameter("newState", target.viewStateType)
-            .returns(callbackListType)
-
-        viewStateDispatcherFunSpecBuilder.addStatement("val changes = mutableListOf<() -> Unit>()")
+            .addParameter("state", target.viewStateType)
 
         target.viewStateElement.enclosedElements
             .filter { it.kind == ElementKind.FIELD }
@@ -413,21 +405,25 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                 val actionName = "draw${variableType.toString().capitalize()}"
                 viewStateDispatcherFunSpecBuilder
                     .beginControlFlow(
-                        "if (oldState == null || oldState.%N != newState.%N)",
+                        "if (oldState == null || oldState?.%N != state.%N)",
                         variableType.toString(),
                         variableType.toString()
                     )
+                    .beginControlFlow(
+                        "withContext(%T.Main) {",
+                        dispatchersType
+                    )
                     .addStatement(
-                        "changes.add({ stateHandler?.%N(view, newState) })",
+                        "stateHandler?.%N(view, state)",
                         actionName
                     )
                     .endControlFlow()
-
+                    .endControlFlow()
             }
 
         viewStateDispatcherFunSpecBuilder
-            .addStatement("dispatchedCallback?.invoke(view, oldState, newState)")
-            .addStatement("return changes")
+            .addStatement("dispatchedCallback?.invoke(view, oldState, state)")
+            .addStatement("oldState = state")
 
         val viewStateDispatcherTypeSpecBuilder = TypeSpec.classBuilder(name)
             .primaryConstructor(
@@ -436,7 +432,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                     .addParameter(ParameterSpec.builder("dispatchedCallback", dispatchCallbackType.copy(nullable = true)).defaultValue("null").build())
                     .build()
             )
-            .addSuperinterface(
+            .superclass(
                 StateDispatcherType.parameterizedBy(
                     target.viewStateType,
                     target.viewStructureType
@@ -457,7 +453,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
             )
             .addFunction(viewStateDispatcherFunSpecBuilder.build())
 
-        val viewStateDispatcherFile = FileSpec.builder(target.packageName, name).addType(viewStateDispatcherTypeSpecBuilder.build()).build()
+        val viewStateDispatcherFile = FileSpec.builder(target.packageName, name).addType(viewStateDispatcherTypeSpecBuilder.build()).addImport("kotlinx.coroutines", "withContext").build()
         filer?.let { viewStateDispatcherFile.writeTo(it) }
     }
 

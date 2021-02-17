@@ -11,6 +11,5 @@ interface Store<S : State, A : Action> {
     suspend fun subscribeState(subscriber: StateSubscriber<S>)
     fun dispatchAction(action: A)
     fun setActionListener(listener: ActionListener<A>)
-    fun getOldState(): S?
     fun getState(): S
 }

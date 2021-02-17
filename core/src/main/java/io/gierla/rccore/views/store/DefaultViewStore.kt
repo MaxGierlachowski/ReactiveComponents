@@ -9,7 +9,8 @@ import io.gierla.rccore.views.view.Structure
 import kotlinx.coroutines.*
 
 @ExperimentalCoroutinesApi
-class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, private val defaultStoreDelegate: Store<S, A> = DefaultStore(initialState)) : ViewStore<S, A, V>, Store<S, A> by defaultStoreDelegate {
+class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, private val defaultStoreDelegate: Store<S, A> = DefaultStore(initialState)) : ViewStore<S, A, V>,
+    Store<S, A> by defaultStoreDelegate {
 
     private var stateDispatcher: StateDispatcher<S, V>? = null
 
@@ -17,11 +18,9 @@ class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, pr
         this.stateDispatcher = stateDispatcher
     }
 
-    override suspend fun applyChanges(view: V, oldState: S?, newState: S) = withContext(Dispatchers.Default) {
-        val changes = stateDispatcher?.calculateChanges(view, oldState, newState) ?: emptyList()
-        withContext(Dispatchers.Main) {
-            changes.forEach { it.invoke() }
-        }
+    override suspend fun applyChanges(view: V, state: S) = withContext(Dispatchers.Default) {
+        stateDispatcher?.dispatchChanges(view, state)
+        return@withContext
     }
 
 }
