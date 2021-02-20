@@ -1,24 +1,18 @@
-buildscript {
-    repositories {
-        google()
-        jcenter()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:${BuildPlugins.androidGradle}")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+plugins {
+    kotlin("android") version kotlinVersion apply false
+    kotlin("kapt") version kotlinVersion apply false
+    kotlin("jvm") version kotlinVersion apply false
 
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:${BuildPlugins.dokka}")
-    }
+    id("org.jetbrains.dokka") version BuildPlugins.dokka
+
+    id("com.android.application") version BuildPlugins.androidGradle apply false
+    id("com.vanniktech.maven.publish") version BuildPlugins.mavenPublish apply false
 }
 
 allprojects {
     repositories {
         google()
         jcenter()
-
-        maven {
-            url = uri("https://dl.bintray.com/maxgierlachowski/ReactiveComponents")
-        }
     }
 }
 

@@ -1,8 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm")
     `java-library`
+    kotlin("jvm")
+    id("com.vanniktech.maven.publish")
 }
 
 dependencies {
@@ -10,7 +11,7 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
 
     // Concurrent coding
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Libraries.coroutinesCore}")
@@ -26,11 +27,3 @@ tasks.withType<KotlinCompile> {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 }
-
-extra.apply{
-    set("artifactId", "Core")
-    set("description", "The core library used to handle the reactive state of compound views.")
-}
-
-apply(from = "${rootDir}/create.gradle.kts")
-apply(from = "${rootDir}/publish.gradle.kts")

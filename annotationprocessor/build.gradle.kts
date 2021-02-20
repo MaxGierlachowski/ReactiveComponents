@@ -1,9 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    `java-library`
     kotlin("jvm")
     kotlin("kapt")
-    `java-library`
+    //id("com.vanniktech.maven.publish")
 }
 
 configure<SourceSetContainer> {
@@ -43,11 +44,3 @@ tasks.withType<KotlinCompile> {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 }
-
-extra.apply{
-    set("artifactId", "AnnotationProcessor")
-    set("description", "Annotation processor used to make the use of reactive components easier.")
-}
-
-apply(from = "${rootDir}/create.gradle.kts")
-apply(from = "${rootDir}/publish.gradle.kts")
