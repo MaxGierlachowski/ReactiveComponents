@@ -1,10 +1,12 @@
+import io.gierla.utils.Dependencies
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-library`
     kotlin("jvm")
     kotlin("kapt")
-    //id("com.vanniktech.maven.publish")
+    id("org.jetbrains.dokka")
+    id("publishPlugin")
 }
 
 configure<SourceSetContainer> {
@@ -18,17 +20,17 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${Dependencies.kotlinVersion}")
 
     // Auto register annotation
-    implementation("com.google.auto.service:auto-service:${Libraries.googleAutoService}")
-    kapt("com.google.auto.service:auto-service:${Libraries.googleAutoService}")
+    implementation("com.google.auto.service:auto-service:${Dependencies.Libraries.googleAutoService}")
+    kapt("com.google.auto.service:auto-service:${Dependencies.Libraries.googleAutoService}")
 
     // Creating *.kt files
-    implementation("com.squareup:kotlinpoet:${Libraries.kotlinPoet}")
+    implementation("com.squareup:kotlinpoet:${Dependencies.Libraries.kotlinPoet}")
 
     // Concurrent coding
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Libraries.coroutinesCore}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Dependencies.Libraries.coroutinesCore}")
 
     // Available Annotations and library classes
     implementation(project(":core"))
@@ -39,8 +41,14 @@ configure<JavaPluginConvention> {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+tasks {
+    withType<KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = JavaVersion.VERSION_1_8.toString()
+        }
+
+    }
+    dokkaHtml.configure {
+        outputDirectory.set(buildDir.resolve("documentation"))
     }
 }

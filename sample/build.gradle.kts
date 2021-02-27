@@ -1,3 +1,4 @@
+import io.gierla.utils.Dependencies
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -8,14 +9,14 @@ plugins {
 
 android {
 
-    compileSdkVersion(AndroidSdk.compileSdkVersion)
+    compileSdkVersion(Dependencies.AndroidSdk.compileSdkVersion)
 
     defaultConfig {
-        applicationId =  AndroidSdk.Sample.applicationId
-        minSdkVersion(AndroidSdk.minSdkVersion)
-        targetSdkVersion(AndroidSdk.targetSdkVersion)
-        versionCode = AndroidSdk.Sample.versionCode
-        versionName = AndroidSdk.Sample.versionName
+        applicationId =  Dependencies.AndroidSdk.Sample.applicationId
+        minSdkVersion(Dependencies.AndroidSdk.minSdkVersion)
+        targetSdkVersion(Dependencies.AndroidSdk.targetSdkVersion)
+        versionCode = Dependencies.AndroidSdk.Sample.versionCode
+        versionName = Dependencies.AndroidSdk.Sample.versionName
     }
 
     buildTypes {
@@ -41,24 +42,24 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${Dependencies.kotlinVersion}")
 
     // Compatibility
-    implementation("androidx.appcompat:appcompat:${Libraries.AndroidX.appCompat}")
+    implementation("androidx.appcompat:appcompat:${Dependencies.Libraries.AndroidX.appCompat}")
 
     // AndroidX
-    implementation("androidx.core:core-ktx:${Libraries.AndroidX.coreKtx}")
+    implementation("androidx.core:core-ktx:${Dependencies.Libraries.AndroidX.coreKtx}")
 
     // Flat layout widget
-    implementation("androidx.constraintlayout:constraintlayout:${Libraries.AndroidX.constraintLayout}")
+    implementation("androidx.constraintlayout:constraintlayout:${Dependencies.Libraries.AndroidX.constraintLayout}")
 
     // Concurrent coding
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Libraries.coroutinesCore}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Libraries.coroutinesCore}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Dependencies.Libraries.coroutinesCore}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Dependencies.Libraries.coroutinesCore}")
 
     // Library
     implementation(project(":core"))
-    //implementation("io.gierla.reactivecomponents:Core:0.0.12")
+    //implementation("io.gierla.reactivecomponents:core:0.0.22")
     kapt(project(":annotationprocessor"))
-    //kapt("io.gierla.reactivecomponents:AnnotationProcessor:0.0.12")
+    //kapt("io.gierla.reactivecomponents:annotations:0.0.22")
 }

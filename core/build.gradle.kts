@@ -1,9 +1,17 @@
+import io.gierla.utils.Dependencies
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-library`
     kotlin("jvm")
-    id("com.vanniktech.maven.publish")
+    id("org.jetbrains.dokka")
+    id("publishPlugin")
+}
+
+configure<SourceSetContainer> {
+    named("main") {
+        java.srcDir("/src/main/java")
+    }
 }
 
 dependencies {
@@ -11,10 +19,10 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
 
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${Dependencies.kotlinVersion}")
 
     // Concurrent coding
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Libraries.coroutinesCore}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Dependencies.Libraries.coroutinesCore}")
 }
 
 configure<JavaPluginConvention> {
@@ -22,8 +30,13 @@ configure<JavaPluginConvention> {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+tasks {
+    withType<KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = JavaVersion.VERSION_1_8.toString()
+        }
+    }
+    dokkaHtml.configure {
+        outputDirectory.set(buildDir.resolve("documentation"))
     }
 }

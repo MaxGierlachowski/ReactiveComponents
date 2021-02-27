@@ -1,4 +1,7 @@
 rootProject.name = "ReactiveComponents"
+
+includeBuild("buildLogic")
+
 include("sample", "core", "annotationprocessor")
 
 pluginManagement {

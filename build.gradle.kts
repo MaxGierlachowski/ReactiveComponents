@@ -1,21 +1,21 @@
 plugins {
-    kotlin("android") version kotlinVersion apply false
-    kotlin("kapt") version kotlinVersion apply false
-    kotlin("jvm") version kotlinVersion apply false
+    kotlin("android") version io.gierla.utils.Dependencies.kotlinVersion apply false
+    kotlin("kapt") version io.gierla.utils.Dependencies.kotlinVersion apply false
+    kotlin("jvm") version io.gierla.utils.Dependencies.kotlinVersion apply false
 
-    id("org.jetbrains.dokka") version BuildPlugins.dokka
+    id("org.jetbrains.dokka") version io.gierla.utils.Dependencies.BuildPlugins.dokka apply false
 
-    id("com.android.application") version BuildPlugins.androidGradle apply false
-    id("com.vanniktech.maven.publish") version BuildPlugins.mavenPublish apply false
+    id("com.android.application") version io.gierla.utils.Dependencies.BuildPlugins.androidGradle apply false
 }
 
 allprojects {
     repositories {
         google()
+        mavenCentral()
         jcenter()
     }
 }
 
-tasks.register("clean", Delete::class){
+tasks.register("clean", Delete::class) {
     delete(rootProject.buildDir)
 }
