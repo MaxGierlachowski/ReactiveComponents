@@ -18,6 +18,7 @@ interface ReactiveView<S: State, A: Action, V: Structure> {
 
     // Managing the state
     fun updateState(stateCallback: (S) -> S)
+    fun setState(stateCallback: (S) -> S)
     fun getState(): S
     suspend fun subscribeState(subscriber: StateSubscriber<S>)
 

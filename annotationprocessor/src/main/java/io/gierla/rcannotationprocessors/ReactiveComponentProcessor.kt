@@ -394,7 +394,7 @@ class ReactiveComponentProcessor : AbstractProcessor() {
 
         val viewStateDispatcherFunSpecBuilder = FunSpec.builder("dispatchChanges")
             .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.SUSPEND)
+            //.addModifiers(KModifier.SUSPEND)
             .addParameter("view", target.viewStructureType)
             .addParameter("state", target.viewStateType)
 
@@ -409,15 +409,15 @@ class ReactiveComponentProcessor : AbstractProcessor() {
                         variableType.toString(),
                         variableType.toString()
                     )
-                    .beginControlFlow(
+                    /*.beginControlFlow(
                         "withContext(%T.Main) {",
                         dispatchersType
-                    )
+                    )*/
                     .addStatement(
                         "stateHandler?.%N(view, state)",
                         actionName
                     )
-                    .endControlFlow()
+                    //.endControlFlow()
                     .endControlFlow()
             }
 

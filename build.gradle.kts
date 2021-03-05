@@ -11,7 +11,6 @@ plugins {
 allprojects {
     repositories {
         google()
-        mavenCentral()
         jcenter()
     }
 }

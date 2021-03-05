@@ -31,6 +31,10 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
         stateSubscribers.value = StateDiffPair(state = state, updateBool = updateBool)
     }
 
+    override fun setState(stateCallback: (S) -> S) {
+        state = stateCallback.invoke(state)
+    }
+
     override fun notifyState() {
         updateBool = !updateBool
         stateSubscribers.value = StateDiffPair(state = state, updateBool = updateBool)

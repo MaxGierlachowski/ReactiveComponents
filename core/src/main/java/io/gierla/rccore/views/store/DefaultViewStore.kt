@@ -18,9 +18,8 @@ class DefaultViewStore<S : State, A : Action, V : Structure>(initialState: S, pr
         this.stateDispatcher = stateDispatcher
     }
 
-    override suspend fun applyChanges(view: V, state: S) = withContext(Dispatchers.Default) {
+    override fun applyChanges(view: V, state: S) {
         stateDispatcher?.dispatchChanges(view, state)
-        return@withContext
     }
 
 }

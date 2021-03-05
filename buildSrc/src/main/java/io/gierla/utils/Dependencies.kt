@@ -32,9 +32,4 @@ object Dependencies {
             const val constraintLayout = "1.1.3"
         }
     }
-
-    object LibConfig {
-        const val groupId = "io.gierla.reactivecomponents"
-        const val version = "0.0.21"
-    }
 }

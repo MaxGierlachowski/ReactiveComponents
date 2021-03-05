@@ -8,5 +8,5 @@ import io.gierla.rccore.views.view.Structure
 
 interface ViewStore<S: State, A: Action, V: Structure> : Store<S, A> {
     fun setStateDispatcher(stateDispatcher: StateDispatcher<S, V>?)
-    suspend fun applyChanges(view: V, state: S)
+    fun applyChanges(view: V, state: S)
 }

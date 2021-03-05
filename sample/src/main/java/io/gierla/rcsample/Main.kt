@@ -5,10 +5,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.gierla.rcsample.component.MyViewTest
 import io.gierla.rcsample.component.MyViewTestVariations
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 @ExperimentalCoroutinesApi
 class Main : AppCompatActivity() {
@@ -30,10 +27,12 @@ class Main : AppCompatActivity() {
             delay(5000)
             for(i in 0..1000) {
                 delay(1)
-                myView.updateState { currentState ->
-                    currentState.copy(
-                        text = "Text $i"
-                    )
+                withContext(Dispatchers.Main) {
+                    myView.setState { currentState ->
+                        currentState.copy(
+                            text = "Text $i"
+                        )
+                    }
                 }
             }
         }

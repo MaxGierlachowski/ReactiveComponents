@@ -29,7 +29,9 @@ class DefaultReactiveView<S : State, A : Action, V : Structure>(initialState: S)
             store.subscribeState(object : StateSubscriber<S> {
                 override suspend fun onNext(state: S) {
                     viewStructure?.let { viewStructure ->
-                        store.applyChanges(viewStructure, state)
+                        withContext(Dispatchers.Main) {
+                            store.applyChanges(viewStructure, state)
+                        }
                     }
                 }
             })
@@ -64,6 +66,13 @@ class DefaultReactiveView<S : State, A : Action, V : Structure>(initialState: S)
     }
 
     override fun updateState(stateCallback: (S) -> S) = store.updateState(stateCallback)
+
+    override fun setState(stateCallback: (S) -> S) {
+        store.setState(stateCallback)
+        viewStructure?.let { viewStructure ->
+            store.applyChanges(viewStructure, store.getState())
+        }
+    }
 
     override fun getState(): S = store.getState()
 
