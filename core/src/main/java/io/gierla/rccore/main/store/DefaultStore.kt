@@ -16,7 +16,7 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
     // "forced" is not enough because we could set a new state dispatcher and a new view-structure right after each other and the view would only be notified once.
     private var updateBool = false
 
-    private val stateSubscribers = MutableStateFlow(StateDiffPair(initialState, updateBool))
+    private val stateSubscribers = MutableStateFlow(StateDiffPair(initialState, true, updateBool))
 
     private var actionListener: ActionListener<A>? = null
 
@@ -28,16 +28,17 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
 
     override fun updateState(stateCallback: (S) -> S) {
         state = stateCallback.invoke(state)
-        stateSubscribers.value = StateDiffPair(state = state, updateBool = updateBool)
+        stateSubscribers.value = StateDiffPair(state = state, emit = true, updateBool = updateBool)
     }
 
     override fun setState(stateCallback: (S) -> S) {
         state = stateCallback.invoke(state)
+        stateSubscribers.value = StateDiffPair(state = state, emit = false, updateBool = updateBool)
     }
 
     override fun notifyState() {
         updateBool = !updateBool
-        stateSubscribers.value = StateDiffPair(state = state, updateBool = updateBool)
+        stateSubscribers.value = StateDiffPair(state = state, emit = true, updateBool = updateBool)
     }
 
     override fun dispatchAction(action: A) {
@@ -46,7 +47,7 @@ class DefaultStore<S : State, A : Action>(initialState: S) : Store<S, A> {
 
     override suspend fun subscribeState(subscriber: StateSubscriber<S>) = withContext(Dispatchers.Default) {
         stateSubscribers.collect {
-            subscriber.onNext(it.state)
+            if (it.emit) subscriber.onNext(it.state)
         }
     }
 
