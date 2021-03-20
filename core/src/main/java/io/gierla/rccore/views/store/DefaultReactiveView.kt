@@ -22,8 +22,11 @@ class DefaultReactiveView<S : State, A : Action, V : Structure>(initialState: S)
     private var viewStructure: V? = null
 
     override fun attachView() {
-        if (this.viewStructure == null) {
-            this.viewStructure = this.viewStructureGetter?.invoke()
+        if (viewStructure == null) {
+            viewStructure = viewStructureGetter?.invoke()
+            viewStructure?.let { viewStructure ->
+                store.applyChanges(viewStructure, store.getState())
+            }
         }
         storeJob = CoroutineScope(Dispatchers.Default).launch {
             store.subscribeState(object : StateSubscriber<S> {
