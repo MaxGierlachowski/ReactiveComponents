@@ -31,11 +31,11 @@ allprojects {
 Then you have to import the libary and it's annotations processor (don' forget to apply the kapt plugin):
 
 ```groovy
-implementation("io.gierla.reactivecomponents:Core:{version}")
-kapt("io.gierla.reactivecomponents:AnnotationProcessor:{version}")
+implementation("io.gierla.reactivecomponents:core::{version}")
+kapt("io.gierla.reactivecomponents:annotations:{version}")
 ```
 
-You can find the newest version in the bintray repository: https://bintray.com/maxgierlachowski/ReactiveComponents
+You can find the newest version in maven central: https://search.maven.org/search?q=io.gierla.ReactiveComponents
 
 #### Code
 
@@ -108,12 +108,12 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
 }
 ```
 
-**Because of the annotation processor, don't forget to trigger a rebuild bevor continuing.** Now we want to add some functionality to our view. We want to be able to set the state, get the state, render the state and listen to events/actions. For this we extend the functionality of our view by delegating it to a generated class (The generated class is `MyViewTestImpl`):
+Now we want to add some functionality to our view. We want to be able to set the state, get the state, render the state and listen to events/actions. For this we extend the functionality of our view by delegating it to a class:
 
 ```kotlin
 @ReactiveComponent
 class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ConstraintLayout(context, attributeSet, defStyleAttr),
-    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler> by MyViewTestImpl(ViewState()) {
+    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure> by DefaultReactiveView(MyViewTest.ViewState()) {
 
     init {
         inflate(context, R.layout.my_view, this)
@@ -142,7 +142,7 @@ Somehow our class also needs to know how our "Component" looks and is structured
 ```kotlin
 @ReactiveComponent
 class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ConstraintLayout(context, attributeSet, defStyleAttr),
-    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler> by MyViewTestImpl(ViewState()) {
+    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure> by DefaultReactiveView(MyViewTest.ViewState()) {
 
     init {
         inflate(context, R.layout.my_view, this)
@@ -184,7 +184,7 @@ Finally we have to manage the lifecycle of our "Component". We are going to add 
 ```kotlin
 @ReactiveComponent
 class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ConstraintLayout(context, attributeSet, defStyleAttr),
-    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler> by MyViewTestImpl(ViewState()) {
+    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure> by DefaultReactiveView(MyViewTest.ViewState()) {
 
     init {
         inflate(context, R.layout.my_view, this)
@@ -236,7 +236,7 @@ Thats basically it, we just created a Reactive Component which manages state and
 ```kotlin
 @ReactiveComponent
 class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ConstraintLayout(context, attributeSet, defStyleAttr),
-    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler> by MyViewTestImpl(ViewState()) {
+    ReactiveView<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure> by DefaultReactiveView(MyViewTest.ViewState()) {
 
     init {
         inflate(context, R.layout.my_view, this)
@@ -254,13 +254,18 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
             testView.isAllCaps = true
         }
       
-      	setVariation(object : Variation<ViewStructure, MyViewTestStateHandler> {
-            override fun getStateHandler(): MyViewTestStateHandler = object : MyViewTestStateHandler {
-                override fun drawText(view: ViewStructure, state: ViewState) {
-                    view.testView.text = state.text.capitalize()
+      	setVariation(
+            variation = myViewTestVariation { 
+                init { 
+                    it.testView.setTextColor(Color.BLACK)
+                }
+                stateHandler { 
+                    drawText { view, state -> 
+                        view.testView.text = state.text
+                    }
                 }
             }
-        })
+        )
     }
 
     override fun onDetachedFromWindow() {
@@ -299,22 +304,13 @@ Now the last question: How do we listen to actions/events and set a new state? T
 
 ```kotlin
 val myView = findViewById<MyViewTest>(R.id.my_view)
-myView.setActionListener(object : ActionListener<MyViewTest.ViewAction> {
-  override fun onNext(action: MyViewTest.ViewAction) {
-    when (action) {
-      is MyViewTest.ViewAction.TextClick -> {
-        myView.updateState { currentState ->
-        	currentState.copy(text = currentState.text + "1")
+myView.setActionListener {
+            when (it) {
+                is MyViewTest.ViewAction.TextClick -> {
+                    Toast.makeText(applicationContext, it.text, Toast.LENGTH_LONG).show()
+                }
+            }
         }
-      }
-    }
-  }
-})
-myView.updateState { currentState ->
-	currentState.copy(
-    text = "hello world!"
-  )
-}
 ```
 
 That's it and now our "Component" is going to be updated atomatically and we will always now about actions/events that happen inside the "Component".
@@ -328,7 +324,17 @@ We often find ourself using the same `ViewGroup` for our compound views (for exa
 This is how we would create `ReactiveConstraintLayout`:
 
 ```kotlin
-open class ReactiveConstraintLayout<S: State, A: Action, V: Structure, D: StateHandler> @JvmOverloads constructor(delegate: ReactiveView<S, A, V, D>, context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ConstraintLayout(context, attributeSet, defStyleAttr), ReactiveView<S, A, V, D> by delegate {
+@ExperimentalCoroutinesApi
+abstract class ReactiveConstraintLayout<S : State, A : Action, V : Structure> @JvmOverloads constructor(
+    initialState: S,
+    context: Context,
+    attributeSet: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : ConstraintLayout(
+    context,
+    attributeSet,
+    defStyleAttr
+), ReactiveView<S, A, V> by DefaultReactiveView<S, A, V>(initialState) {
 
     override fun onDetachedFromWindow() {
         detachView()
@@ -346,8 +352,18 @@ open class ReactiveConstraintLayout<S: State, A: Action, V: Structure, D: StateH
 And this is how we would use it, as you can see it eliminates some boilerplate code:
 
 ```kotlin
+@ExperimentalCoroutinesApi
 @ReactiveComponent
-class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyleAttr: Int = 0) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure, MyViewTestStateHandler>(MyViewTestImpl(ViewState()), context, attributeSet, defStyleAttr) {
+class MyViewTest @JvmOverloads constructor(
+    context: Context,
+    attributeSet: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : ReactiveConstraintLayout<MyViewTest.ViewState, MyViewTest.ViewAction, MyViewTest.ViewStructure>(
+    ViewState(),
+    context,
+    attributeSet,
+    defStyleAttr
+) {
 
     init {
         inflate(context, R.layout.my_view, this)
@@ -358,20 +374,25 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
             }
         }
 
+        setVariation(
+            variation = myViewTestVariation {
+                init {
+                    it.testView.setTextColor(Color.BLACK)
+                }
+                stateHandler {
+                    drawText { view, state ->
+                        view.testView.text = state.text
+                    }
+                }
+            }
+        )
+
         requireViewStructure().run {
             testView.setOnClickListener {
                 dispatchAction(ViewAction.TextClick(getState().text))
             }
             testView.isAllCaps = true
         }
-      
-      	setVariation(object : Variation<ViewStructure, MyViewTestStateHandler> {
-            override fun getStateHandler(): MyViewTestStateHandler = object : MyViewTestStateHandler {
-                override fun drawText(view: ViewStructure, state: ViewState) {
-                    view.testView.text = state.text.capitalize()
-                }
-            }
-        })
     }
 
     @io.gierla.rccore.annotations.State
@@ -396,7 +417,7 @@ class MyViewTest @JvmOverloads constructor(context: Context, attributeSet: Attri
 
 ### Information
 
-This library is an very early stage but I am going to try to realese a stable version as fast as I can. I know that Jetpack Composer just started to be a thing but I am pretty sure until we can take full advantage of it, it is going to be some time and until than this library can greatly increase productivity and stability. 
+This library is an very early stage but I am going to try to realese a stable version as fast as I can. I know that Jetpack Compose just started to be a thing but I am pretty sure until we can take full advantage of it, it is going to be some time and until than this library can greatly increase productivity and stability. 
 
 While developing this library I tried to reduce the work the developer has to do as much as I can, I still have a single idea how it could be made even more developer friendly but at first I want to look if this library is even wanted. (using bytecode transformation and an ide plugin)
 
